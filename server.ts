@@ -927,6 +927,12 @@ async function startServer() {
     res.json(capturedErrors);
   });
 
+  // 404 handler for unmatched API routes
+  app.use("/api/", (req, res) => {
+    console.log("[API 404] Unmatched API route:", req.path);
+    res.status(404).json({ error: "API endpoint not found" });
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -942,10 +948,12 @@ async function startServer() {
       vite.middlewares(req, res, next);
     });
     
-    // Serve index.html for SPA routing (development) - AFTER Vite middleware
-    app.get("*", (req, res) => {
+    // Serve index.html for SPA routing (development)
+    app.all("*", (req, res) => {
+      // Return 404 for API routes
       if (req.path.startsWith("/api/")) {
-        return res.status(404).json({ error: "API endpoint not found" });
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(404).end(JSON.stringify({ error: "API endpoint not found" }));
       }
       const indexPath = "index.html";
       res.sendFile(indexPath, { root: process.cwd() }, (err) => {
@@ -956,14 +964,32 @@ async function startServer() {
       });
     });
   } else {
-    // Serve static files in production
-    app.use(express.static("dist"));
-    
-    // Serve index.html for SPA routing (only in production, after static files)
-    // Exclude API routes from SPA fallback
-    app.get("*", (req, res) => {
+    // Production: Serve static files ONLY for non-API routes
+    app.use((req, res, next) => {
+      // Skip API routes
       if (req.path.startsWith("/api/")) {
-        return res.status(404).json({ error: "API endpoint not found" });
+        return next();
+      }
+      // Try to serve static files
+      const fs = require('fs');
+      const path = require('path');
+      const filePath = path.join(process.cwd(), 'dist', req.path);
+      
+      // Check if file exists
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+        return express.static("dist")(req, res, next);
+      }
+      // File doesn't exist, continue to SPA fallback
+      next();
+    });
+    
+    // Serve index.html for SPA routing (production)
+    app.all("*", (req, res) => {
+      // Return 404 for API routes
+      if (req.path.startsWith("/api/")) {
+        console.log("[CATCH-ALL] API route detected:", req.path);
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(404).end(JSON.stringify({ error: "API endpoint not found" }));
       }
       const indexPath = "dist/index.html";
       res.sendFile(indexPath, { root: process.cwd() }, (err) => {
