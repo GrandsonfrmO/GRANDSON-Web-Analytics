@@ -4,7 +4,7 @@ import {
   Code2, AlertTriangle, CheckCircle2, Bot, Lightbulb, 
   ChevronRight, Activity, Zap, Layers, BarChart2,
   Box, Server, Palette, FileCode, Cpu, LayoutTemplate, Info, History, Clock,
-  Type, Image as ImageIcon, Link as LinkIcon, Bug, Award, TrendingUp, Gauge
+  Type, Image as ImageIcon, Link as LinkIcon, Bug, Award, TrendingUp, Gauge, GitCompare
 } from 'lucide-react';
 import { cn } from './utils';
 import { motion } from 'motion/react';
@@ -12,6 +12,7 @@ import { LoadingAnimation } from './components/LoadingAnimation';
 import { ResultsGrid } from './components/ResultsGrid';
 import { InfiniteScroll } from './components/InfiniteScroll';
 import { Tabs } from './components/Tabs';
+import { CompareMode } from './components/CompareMode';
 import {
   RadarChart,
   PolarGrid,
@@ -127,6 +128,7 @@ export default function App() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [history, setHistory] = useState<AnalysisResult[]>([]);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [compareMode, setCompareMode] = useState(false);
 
   const [clientErrors, setClientErrors] = useState<any[]>([]);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
@@ -308,6 +310,20 @@ export default function App() {
 
           {/* Actions */}
           <div className="flex items-center gap-2 sm:gap-4">
+            <button 
+              onClick={() => setCompareMode(!compareMode)}
+              className={cn(
+                "text-sm font-medium px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2",
+                compareMode 
+                  ? "bg-purple-600 hover:bg-purple-700 text-white" 
+                  : "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+              )}
+            >
+              <GitCompare className="w-4 h-4" />
+              <span className="hidden sm:inline">
+                {compareMode ? 'Mode Normal' : 'Comparer'}
+              </span>
+            </button>
             <button className="bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
               Version bêta
             </button>
@@ -319,6 +335,11 @@ export default function App() {
         "relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-500 pb-24 md:pb-12",
         (!result && !loading) ? "py-12 sm:py-20 lg:py-32" : "py-6 sm:py-8"
       )}>
+        {/* Mode Comparaison */}
+        {compareMode ? (
+          <CompareMode />
+        ) : (
+          <>
         {/* Search Section */}
         <div id="search" className={cn(
           "w-full mx-auto transition-all duration-500",
@@ -1152,6 +1173,8 @@ export default function App() {
               </motion.div>
             )}
           </motion.div>
+        )}
+          </>
         )}
       </main>
 
