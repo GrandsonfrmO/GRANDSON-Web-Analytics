@@ -1,3 +1,5 @@
+import * as cheerio from 'cheerio';
+
 const MAX_HTML_SIZE = 5 * 1024 * 1024;
 const FETCH_TIMEOUT = 15000;
 const analysisCache = new Map();
@@ -64,22 +66,31 @@ async function analyzeWebsite(url) {
   const loadTime = Date.now() - startTime;
   const htmlSizeKB = Math.round(html.length / 1024);
 
+  let $;
+  try {
+    $ = cheerio.load(html);
+  } catch (e) {
+    throw new Error('Failed to parse HTML content');
+  }
+
   const techStack = [];
   const features = [];
   const recommendations = [];
 
-  const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-  const title = titleMatch ? titleMatch[1].trim() : 'Missing';
-  const hasMetaDescription = /<meta[^>]*name=["']description["'][^>]*>/i.test(html);
-  const hasViewport = /<meta[^>]*name=["']viewport["'][^>]*>/i.test(html);
-  const langMatch = html.match(/<html[^>]*lang=["']([^"']*)/i);
-  const lang = langMatch ? langMatch[1] : 'Missing';
-  const h1Count = (html.match(/<h1[^>]*>/gi) || []).length;
-  const imageCount = (html.match(/<img[^>]*>/gi) || []).length;
-  const linkCount = (html.match(/<a[^>]*>/gi) || []).length;
-  const domElements = (html.match(/<[^>]+>/g) || []).length;
-  const scriptCount = (html.match(/<script[^>]*>/gi) || []).length;
-  const cssCount = (html.match(/<link[^>]*rel=["']stylesheet["'][^>]*>/gi) || []).length;
+  const title = $('title').text().trim() || 'Missing';
+  const hasMetaDescription = !!$('meta[name="description"]').attr('content');
+  const hasViewport = !!$('meta[name="viewport"]').attr('content');
+  const lang = $('html').attr('lang') || 'Missing';
+  const h1Count = $('h1').length;
+  const imageCount = $('img').length;
+  const linkCount = $('a').length;
+  const domElements = $('*').length;
+  const scriptCount = $('script').length;
+  const cssCount = $('link[rel="stylesheet"]').length;
+
+  // Accessibility
+  const ariaCount = $('[aria-label], [aria-labelledby], [aria-describedby], [role]').length;
+  const semanticElements = $('header, nav, main, article, section, aside, footer').length;
 
   const https = targetUrl.startsWith('https://');
   let securityScore = https ? 70 : 40;
@@ -99,10 +110,10 @@ async function analyzeWebsite(url) {
   if (htmlContent.includes('tailwind')) techStack.push({ name: 'Tailwind CSS', category: 'Framework UI' });
   if (htmlContent.includes('bootstrap')) techStack.push({ name: 'Bootstrap', category: 'Framework UI' });
 
-  if (/<form[^>]*>/i.test(html)) features.push('Formulaires');
-  if (/<input[^>]*type=["']search["'][^>]*>/i.test(html)) features.push('Recherche');
-  if (/<video[^>]*>/i.test(html)) features.push('Vidéo');
-  if (/<canvas[^>]*>/i.test(html)) features.push('Canvas/WebGL');
+  if ($('form').length > 0) features.push('Formulaires');
+  if ($('input[type="search"]').length > 0) features.push('Recherche');
+  if ($('video').length > 0) features.push('Vidéo');
+  if ($('canvas').length > 0) features.push('Canvas/WebGL');
 
   if (!https) recommendations.push('Activez HTTPS pour sécuriser votre site');
   if (!hasMetaDescription) recommendations.push('Ajoutez une meta description');
@@ -120,19 +131,19 @@ async function analyzeWebsite(url) {
     features,
     techStack,
     security: { https, score: securityScore, vulnerabilitiesList: [] },
-    ux: { 
-      title, 
-      hasMetaDescription, 
-      hasViewport, 
-      lang, 
-      h1Count, 
-      imageCount, 
-      linkCount, 
-      domElements, 
+    ux: {
+      title,
+      hasMetaDescription,
+      hasViewport,
+      lang,
+      h1Count,
+      imageCount,
+      linkCount,
+      domElements,
       score: uxScore,
       accessibility: {
-        ariaCount: (html.match(/aria-/gi) || []).length,
-        semanticElements: (html.match(/<(header|nav|main|article|section|aside|footer)[^>]*>/gi) || []).length
+        ariaCount,
+        semanticElements
       },
       mobileFriendliness: hasViewport ? 100 : 0
     },
@@ -140,7 +151,16 @@ async function analyzeWebsite(url) {
     aiProbability: 0,
     developerLevel: 'Unknown',
     recommendations,
-    pricing: { freelance: 0, agency: 0, estimatedDays: 0, resaleValue: 0, domainAgeYears: 0, backlinkProfile: 0, trafficVolume: 0, pricingFactors: [] },
+    pricing: {
+      freelance: 0,
+      agency: 0,
+      estimatedDays: 0,
+      resaleValue: 0,
+      domainAgeYears: 0,
+      backlinkProfile: 0,
+      trafficVolume: 0,
+      pricingFactors: []
+    },
   };
 }
 
