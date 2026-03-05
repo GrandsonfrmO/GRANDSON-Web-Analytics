@@ -72,111 +72,307 @@ async function analyzeWebsite(url) {
     throw new Error('Failed to parse HTML content');
   }
 
-  // === ANALYSE AVANCÉE DES TECHNOLOGIES ===
+  // === ANALYSE EXHAUSTIVE DES TECHNOLOGIES ===
   const techStack = [];
   const htmlLower = html.toLowerCase();
+  const detectedTechs = new Set(); // Pour éviter les doublons
   
-  // Frameworks JS
+  // Helper pour ajouter une tech
+  const addTech = (name, category) => {
+    if (!detectedTechs.has(name)) {
+      techStack.push({ name, category });
+      detectedTechs.add(name);
+    }
+  };
+
+  // === 1. LANGAGES DE BASE (toujours présents) ===
+  addTech('HTML5', 'Langage');
+  if ($('style').length > 0 || $('link[rel="stylesheet"]').length > 0) {
+    addTech('CSS3', 'Langage');
+  }
+  if ($('script').length > 0) {
+    addTech('JavaScript', 'Langage');
+  }
+
+  // === 2. FRAMEWORKS & LIBRARIES JS ===
   if (htmlLower.includes('react') || $('script[src*="react"]').length || $('[data-reactroot], [data-reactid]').length) {
-    techStack.push({ name: 'React', category: 'Framework JS' });
+    addTech('React', 'Framework JS');
   }
   if (htmlLower.includes('vue') || $('script[src*="vue"]').length || $('[data-v-]').length) {
-    techStack.push({ name: 'Vue.js', category: 'Framework JS' });
+    addTech('Vue.js', 'Framework JS');
   }
   if (htmlLower.includes('angular') || $('script[src*="angular"]').length || $('[ng-app], [ng-controller]').length) {
-    techStack.push({ name: 'Angular', category: 'Framework JS' });
+    addTech('Angular', 'Framework JS');
   }
   if (htmlLower.includes('next') || $('script[src*="next"]').length || $('script[src*="_next"]').length) {
-    techStack.push({ name: 'Next.js', category: 'Framework' });
+    addTech('Next.js', 'Framework');
   }
   if (htmlLower.includes('nuxt') || $('script[src*="nuxt"]').length) {
-    techStack.push({ name: 'Nuxt.js', category: 'Framework' });
+    addTech('Nuxt.js', 'Framework');
   }
   if (htmlLower.includes('svelte') || $('script[src*="svelte"]').length) {
-    techStack.push({ name: 'Svelte', category: 'Framework JS' });
+    addTech('Svelte', 'Framework JS');
   }
   if (htmlLower.includes('jquery') || $('script[src*="jquery"]').length) {
-    techStack.push({ name: 'jQuery', category: 'Library' });
+    addTech('jQuery', 'Library');
+  }
+  if (htmlLower.includes('lodash') || $('script[src*="lodash"]').length) {
+    addTech('Lodash', 'Library');
+  }
+  if (htmlLower.includes('axios') || $('script[src*="axios"]').length) {
+    addTech('Axios', 'Library');
+  }
+  if (htmlLower.includes('gsap') || $('script[src*="gsap"]').length) {
+    addTech('GSAP', 'Animation');
+  }
+  if (htmlLower.includes('three.js') || htmlLower.includes('threejs') || $('script[src*="three"]').length) {
+    addTech('Three.js', '3D Graphics');
+  }
+  if (htmlLower.includes('d3.js') || htmlLower.includes('d3js') || $('script[src*="d3"]').length) {
+    addTech('D3.js', 'Data Visualization');
+  }
+  if (htmlLower.includes('chart.js') || $('script[src*="chart"]').length) {
+    addTech('Chart.js', 'Charts');
   }
   
-  // CSS Frameworks
+  // === 3. CSS FRAMEWORKS ===
   if (htmlLower.includes('tailwind') || $('link[href*="tailwind"]').length || $('[class*="tw-"]').length) {
-    techStack.push({ name: 'Tailwind CSS', category: 'CSS Framework' });
+    addTech('Tailwind CSS', 'CSS Framework');
   }
   if (htmlLower.includes('bootstrap') || $('link[href*="bootstrap"]').length || $('[class*="col-"], [class*="btn-"]').length) {
-    techStack.push({ name: 'Bootstrap', category: 'CSS Framework' });
+    addTech('Bootstrap', 'CSS Framework');
   }
   if (htmlLower.includes('bulma') || $('link[href*="bulma"]').length) {
-    techStack.push({ name: 'Bulma', category: 'CSS Framework' });
+    addTech('Bulma', 'CSS Framework');
   }
   if (htmlLower.includes('foundation') || $('link[href*="foundation"]').length) {
-    techStack.push({ name: 'Foundation', category: 'CSS Framework' });
+    addTech('Foundation', 'CSS Framework');
   }
   if (htmlLower.includes('materialize') || $('link[href*="materialize"]').length) {
-    techStack.push({ name: 'Materialize', category: 'CSS Framework' });
+    addTech('Materialize', 'CSS Framework');
+  }
+  if (htmlLower.includes('semantic-ui') || $('link[href*="semantic"]').length) {
+    addTech('Semantic UI', 'CSS Framework');
+  }
+  if (htmlLower.includes('uikit') || $('link[href*="uikit"]').length) {
+    addTech('UIkit', 'CSS Framework');
   }
   
-  // CMS & Platforms
+  // === 4. CMS & PLATFORMS ===
   if (htmlLower.includes('wp-content') || htmlLower.includes('wordpress') || htmlLower.includes('wp-includes')) {
-    techStack.push({ name: 'WordPress', category: 'CMS' });
+    addTech('WordPress', 'CMS');
   }
   if (htmlLower.includes('shopify') || htmlLower.includes('cdn.shopify')) {
-    techStack.push({ name: 'Shopify', category: 'E-commerce' });
+    addTech('Shopify', 'E-commerce');
   }
   if (htmlLower.includes('wix') || htmlLower.includes('wixstatic')) {
-    techStack.push({ name: 'Wix', category: 'Website Builder' });
+    addTech('Wix', 'Website Builder');
   }
   if (htmlLower.includes('squarespace') || htmlLower.includes('sqsp')) {
-    techStack.push({ name: 'Squarespace', category: 'Website Builder' });
+    addTech('Squarespace', 'Website Builder');
   }
   if (htmlLower.includes('webflow') || htmlLower.includes('webflow.io')) {
-    techStack.push({ name: 'Webflow', category: 'Website Builder' });
+    addTech('Webflow', 'Website Builder');
   }
   if (htmlLower.includes('drupal')) {
-    techStack.push({ name: 'Drupal', category: 'CMS' });
+    addTech('Drupal', 'CMS');
   }
   if (htmlLower.includes('joomla')) {
-    techStack.push({ name: 'Joomla', category: 'CMS' });
+    addTech('Joomla', 'CMS');
+  }
+  if (htmlLower.includes('magento')) {
+    addTech('Magento', 'E-commerce');
+  }
+  if (htmlLower.includes('prestashop')) {
+    addTech('PrestaShop', 'E-commerce');
+  }
+  if (htmlLower.includes('woocommerce')) {
+    addTech('WooCommerce', 'E-commerce');
   }
   
-  // Analytics & Marketing
+  // === 5. ANALYTICS & MARKETING ===
   if (htmlLower.includes('google-analytics') || htmlLower.includes('gtag') || htmlLower.includes('ga.js')) {
-    techStack.push({ name: 'Google Analytics', category: 'Analytics' });
+    addTech('Google Analytics', 'Analytics');
   }
   if (htmlLower.includes('gtm') || htmlLower.includes('googletagmanager')) {
-    techStack.push({ name: 'Google Tag Manager', category: 'Tag Manager' });
+    addTech('Google Tag Manager', 'Tag Manager');
   }
   if ((htmlLower.includes('facebook') || htmlLower.includes('fbq')) && htmlLower.includes('pixel')) {
-    techStack.push({ name: 'Facebook Pixel', category: 'Marketing' });
+    addTech('Facebook Pixel', 'Marketing');
   }
   if (htmlLower.includes('hotjar')) {
-    techStack.push({ name: 'Hotjar', category: 'Analytics' });
+    addTech('Hotjar', 'Analytics');
   }
   if (htmlLower.includes('mixpanel')) {
-    techStack.push({ name: 'Mixpanel', category: 'Analytics' });
+    addTech('Mixpanel', 'Analytics');
+  }
+  if (htmlLower.includes('segment')) {
+    addTech('Segment', 'Analytics');
+  }
+  if (htmlLower.includes('amplitude')) {
+    addTech('Amplitude', 'Analytics');
+  }
+  if (htmlLower.includes('matomo') || htmlLower.includes('piwik')) {
+    addTech('Matomo', 'Analytics');
   }
   
-  // Fonts & Icons
+  // === 6. FONTS & ICONS ===
   if (htmlLower.includes('font-awesome') || $('link[href*="font-awesome"]').length) {
-    techStack.push({ name: 'Font Awesome', category: 'Icons' });
+    addTech('Font Awesome', 'Icons');
   }
   if (htmlLower.includes('google') && htmlLower.includes('fonts')) {
-    techStack.push({ name: 'Google Fonts', category: 'Fonts' });
+    addTech('Google Fonts', 'Fonts');
+  }
+  if (htmlLower.includes('typekit') || htmlLower.includes('adobe fonts')) {
+    addTech('Adobe Fonts', 'Fonts');
+  }
+  if (htmlLower.includes('material-icons') || htmlLower.includes('material icons')) {
+    addTech('Material Icons', 'Icons');
+  }
+  if (htmlLower.includes('ionicons')) {
+    addTech('Ionicons', 'Icons');
+  }
+  if (htmlLower.includes('feather')) {
+    addTech('Feather Icons', 'Icons');
   }
   
-  // CDN & Hosting
+  // === 7. CDN & HOSTING ===
   if (htmlLower.includes('cloudflare')) {
-    techStack.push({ name: 'Cloudflare', category: 'CDN' });
+    addTech('Cloudflare', 'CDN');
   }
   if (htmlLower.includes('amazonaws') || htmlLower.includes('aws')) {
-    techStack.push({ name: 'AWS', category: 'Hosting' });
+    addTech('AWS', 'Hosting');
   }
   if (htmlLower.includes('vercel')) {
-    techStack.push({ name: 'Vercel', category: 'Hosting' });
+    addTech('Vercel', 'Hosting');
   }
   if (htmlLower.includes('netlify')) {
-    techStack.push({ name: 'Netlify', category: 'Hosting' });
+    addTech('Netlify', 'Hosting');
   }
+  if (htmlLower.includes('github.io') || htmlLower.includes('github pages')) {
+    addTech('GitHub Pages', 'Hosting');
+  }
+  if (htmlLower.includes('heroku')) {
+    addTech('Heroku', 'Hosting');
+  }
+  if (htmlLower.includes('digitalocean')) {
+    addTech('DigitalOcean', 'Hosting');
+  }
+  
+  // === 8. PAYMENT & SERVICES ===
+  if (htmlLower.includes('stripe')) {
+    addTech('Stripe', 'Payment');
+  }
+  if (htmlLower.includes('paypal')) {
+    addTech('PayPal', 'Payment');
+  }
+  if (htmlLower.includes('square')) {
+    addTech('Square', 'Payment');
+  }
+  
+  // === 9. COMMUNICATION ===
+  if (htmlLower.includes('intercom')) {
+    addTech('Intercom', 'Chat');
+  }
+  if (htmlLower.includes('zendesk')) {
+    addTech('Zendesk', 'Support');
+  }
+  if (htmlLower.includes('drift')) {
+    addTech('Drift', 'Chat');
+  }
+  if (htmlLower.includes('tawk.to') || htmlLower.includes('tawk')) {
+    addTech('Tawk.to', 'Chat');
+  }
+  if (htmlLower.includes('crisp')) {
+    addTech('Crisp', 'Chat');
+  }
+  
+  // === 10. MEDIA & CONTENT ===
+  if (htmlLower.includes('youtube') || $('iframe[src*="youtube"]').length) {
+    addTech('YouTube', 'Video');
+  }
+  if (htmlLower.includes('vimeo') || $('iframe[src*="vimeo"]').length) {
+    addTech('Vimeo', 'Video');
+  }
+  if (htmlLower.includes('soundcloud')) {
+    addTech('SoundCloud', 'Audio');
+  }
+  if (htmlLower.includes('spotify')) {
+    addTech('Spotify', 'Audio');
+  }
+  
+  // === 11. MAPS ===
+  if (htmlLower.includes('google') && htmlLower.includes('maps')) {
+    addTech('Google Maps', 'Maps');
+  }
+  if (htmlLower.includes('mapbox')) {
+    addTech('Mapbox', 'Maps');
+  }
+  if (htmlLower.includes('leaflet')) {
+    addTech('Leaflet', 'Maps');
+  }
+  
+  // === 12. SOCIAL MEDIA ===
+  if (htmlLower.includes('twitter') || htmlLower.includes('x.com')) {
+    addTech('Twitter/X', 'Social');
+  }
+  if (htmlLower.includes('instagram')) {
+    addTech('Instagram', 'Social');
+  }
+  if (htmlLower.includes('linkedin')) {
+    addTech('LinkedIn', 'Social');
+  }
+  
+  // === 13. SEO & PERFORMANCE ===
+  if (htmlLower.includes('schema.org') || $('script[type="application/ld+json"]').length) {
+    addTech('Schema.org', 'SEO');
+  }
+  if ($('link[rel="preload"]').length > 0) {
+    addTech('Resource Preloading', 'Performance');
+  }
+  if ($('img[loading="lazy"]').length > 0) {
+    addTech('Lazy Loading', 'Performance');
+  }
+  if ($('link[rel="dns-prefetch"]').length > 0 || $('link[rel="preconnect"]').length > 0) {
+    addTech('DNS Prefetch', 'Performance');
+  }
+  
+  // === 14. SECURITY ===
+  if (https) {
+    addTech('HTTPS/SSL', 'Security');
+  }
+  if (securityHeaders.contentSecurityPolicy) {
+    addTech('Content Security Policy', 'Security');
+  }
+  
+  // === 15. RESPONSIVE & MOBILE ===
+  if ($('meta[name="viewport"]').length > 0) {
+    addTech('Responsive Design', 'Mobile');
+  }
+  if ($('link[rel="manifest"]').length > 0) {
+    addTech('PWA Manifest', 'Mobile');
+  }
+  if ($('meta[name="apple-mobile-web-app-capable"]').length > 0) {
+    addTech('iOS Web App', 'Mobile');
+  }
+
+  // Si moins de 10 technologies, ajouter des technologies génériques basées sur le contenu
+  if (techStack.length < 10) {
+    if ($('form').length > 0) addTech('HTML Forms', 'Feature');
+    if ($('video').length > 0) addTech('HTML5 Video', 'Media');
+    if ($('audio').length > 0) addTech('HTML5 Audio', 'Media');
+    if ($('canvas').length > 0) addTech('HTML5 Canvas', 'Graphics');
+    if ($('svg').length > 0) addTech('SVG Graphics', 'Graphics');
+    if ($('[data-aos], [data-animate], [class*="animate"]').length > 0) addTech('CSS Animations', 'Animation');
+    if ($('picture').length > 0 || $('source').length > 0) addTech('Responsive Images', 'Performance');
+    if (htmlLower.includes('cookie') || htmlLower.includes('gdpr')) addTech('Cookie Consent', 'Compliance');
+    if ($('meta[property^="og:"]').length > 0) addTech('Open Graph Protocol', 'SEO');
+    if ($('link[rel="canonical"]').length > 0) addTech('Canonical URLs', 'SEO');
+  }
+
+  // Limiter à 20 technologies max
+  const finalTechStack = techStack.slice(0, 20);
+
 
   // === ANALYSE DE SÉCURITÉ AVANCÉE ===
   const https = targetUrl.startsWith('https://');
@@ -633,7 +829,7 @@ async function analyzeWebsite(url) {
       loadTime: loadTime < 1000 ? 'Excellent' : loadTime < 3000 ? 'Bon' : 'À améliorer'
     },
     features,
-    techStack,
+    techStack: finalTechStack,
     security: {
       https,
       hsts: !!securityHeaders.strictTransportSecurity,
