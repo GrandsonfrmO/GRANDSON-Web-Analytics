@@ -1020,6 +1020,14 @@ async function analyzeWebsite(url) {
       lazyLoadRatio: imageCount > 0 ? Math.round((lazyLoadImages / imageCount) * 100) : 0,
       score: uxScore,
       issues: uxIssues,
+      accessibility: {
+        ariaCount: ariaLabels,
+        roleCount: roleAttributes,
+        semanticElements,
+        formLabels,
+        formInputs,
+        score: Math.min(100, Math.round(((ariaLabels * 2) + (roleAttributes * 2) + (semanticElements * 3)) / 2))
+      },
       mobileFriendliness: hasViewport ? 100 : 0,
       readabilityScore,
       navigationClarity
