@@ -115,6 +115,90 @@ async function analyzeWebsite(url) {
   // Images avec lazy loading
   const lazyLoadImages = $('img[loading="lazy"]').length;
 
+  // === NOUVELLES ANALYSES AVANCÉES ===
+  
+  // 1. ANALYSE DE PERFORMANCE AVANCÉE
+  const blockingScripts = $('script:not([async]):not([defer])').length;
+  const blockingCSS = $('link[rel="stylesheet"]:not([media="print"])').length;
+  const contentEncoding = response.headers.get('content-encoding') || 'none';
+  const hasCompression = contentEncoding.includes('gzip') || contentEncoding.includes('br');
+  
+  // Analyse des images
+  let totalImageSize = 0;
+  let largeImages = 0;
+  const imageSources = [];
+  $('img').each((i, el) => {
+    const src = $(el).attr('src') || '';
+    if (src) imageSources.push(src);
+  });
+  
+  // 2. ANALYSE SEO APPROFONDIE
+  const metaRobots = $('meta[name="robots"]').attr('content') || 'index, follow';
+  const hasCanonical = !!$('link[rel="canonical"]').length;
+  const canonicalUrl = $('link[rel="canonical"]').attr('href') || '';
+  const structuredData = $('script[type="application/ld+json"]').length;
+  const hasAmpVersion = !!$('link[rel="amphtml"]').length;
+  
+  // 3. SÉCURITÉ RENFORCÉE
+  const mixedContent = https && (html.includes('http://') || html.includes("src='http://") || html.includes('src="http://'));
+  const hasSubresourceIntegrity = $('script[integrity], link[integrity]').length > 0;
+  const cookieInfo = response.headers.get('set-cookie') || '';
+  const hasSecureCookies = cookieInfo.includes('Secure') && cookieInfo.includes('HttpOnly');
+  
+  // 4. ACCESSIBILITÉ AMÉLIORÉE
+  const linksWithoutText = $('a:not(:has(*))').filter((i, el) => !$(el).text().trim()).length;
+  const buttonsCount = $('button, input[type="button"], input[type="submit"]').length;
+  const headings = {
+    h1: $('h1').length,
+    h2: $('h2').length,
+    h3: $('h3').length,
+    h4: $('h4').length,
+    h5: $('h5').length,
+    h6: $('h6').length
+  };
+  
+  // Vérification de la hiérarchie des titres
+  let headingHierarchyValid = true;
+  if (headings.h1 > 1) headingHierarchyValid = false;
+  if (headings.h3 > 0 && headings.h2 === 0) headingHierarchyValid = false;
+  if (headings.h4 > 0 && headings.h3 === 0) headingHierarchyValid = false;
+  
+  // 5. ANALYSE DE CONTENU
+  const detectedLang = $('html').attr('lang') || $('meta[http-equiv="content-language"]').attr('content') || 'unknown';
+  const textContent = $('body').text().replace(/\s+/g, ' ').trim();
+  const wordCount = textContent.split(/\s+/).filter(w => w.length > 0).length;
+  const dateElements = $('time, [datetime], .date, .published').length;
+  
+  // 6. ANALYSE MOBILE
+  const viewportContent = $('meta[name="viewport"]').attr('content') || '';
+  const hasResponsiveViewport = viewportContent.includes('width=device-width');
+  const hasMediaQueries = html.includes('@media') || $('link[media]').length > 0;
+  const touchIcons = $('link[rel="apple-touch-icon"], link[rel="icon"]').length;
+  
+  // 7. ANALYSE DE CONVERSION
+  const ctaButtons = $('button, a').filter((i, el) => {
+    const text = $(el).text().toLowerCase();
+    return text.includes('buy') || text.includes('acheter') || text.includes('subscribe') || 
+           text.includes('sign up') || text.includes('get started') || text.includes('contact') ||
+           text.includes('commencer') || text.includes('essai') || text.includes('demo');
+  }).length;
+  
+  const forms = $('form').length;
+  const formInputs = $('input, textarea, select').length;
+  const requiredFields = $('input[required], textarea[required], select[required]').length;
+  const popups = $('[class*="modal"], [class*="popup"], [class*="overlay"]').length;
+  
+  // 8. RESSOURCES EXTERNES
+  const externalScripts = $('script[src]').filter((i, el) => {
+    const src = $(el).attr('src') || '';
+    return src.startsWith('http') && !src.includes(hostname);
+  }).length;
+  
+  const externalCSS = $('link[rel="stylesheet"][href]').filter((i, el) => {
+    const href = $(el).attr('href') || '';
+    return href.startsWith('http') && !href.includes(hostname);
+  }).length;
+
   // === ANALYSE EXHAUSTIVE DES TECHNOLOGIES ===
   const techStack = [];
   const detectedTechs = new Set(); // Pour éviter les doublons
@@ -446,7 +530,6 @@ async function analyzeWebsite(url) {
   const metaDescription = $('meta[name="description"]').attr('content') || '';
   const hasViewport = !!$('meta[name="viewport"]').attr('content');
   const hasOpenGraph = !!$('meta[property^="og:"]').length;
-  const hasCanonical = !!$('link[rel="canonical"]').length;
   const lang = $('html').attr('lang') || '';
   const h1Count = $('h1').length;
   const h1Text = $('h1').first().text().trim();
@@ -456,8 +539,7 @@ async function analyzeWebsite(url) {
   const externalLinks = $('a[href^="http"]').length;
   const internalLinks = linkCount - externalLinks;
 
-  // Ratio texte/HTML (limité entre 0 et 100)
-  const textContent = $('body').text().replace(/\s+/g, ' ').trim();
+  // Ratio texte/HTML (limité entre 0 et 100) - utilise textContent déjà déclaré
   const textLength = textContent.length;
   const htmlLength = html.length;
   const textToHtmlRatio = htmlLength > 0 ? Math.min(100, Math.round((textLength / htmlLength) * 100)) : 0;
@@ -465,9 +547,8 @@ async function analyzeWebsite(url) {
   // GDPR
   const gdprCompliant = htmlLower.includes('cookie') && (htmlLower.includes('consent') || htmlLower.includes('accepter'));
 
-  // Accessibilité - formLabels et formInputs
+  // Accessibilité - formLabels (formInputs déjà déclaré)
   const formLabels = $('label').length;
-  const formInputs = $('input, textarea, select').length;
 
   // Lisibilité (basé sur la longueur des paragraphes et le contenu)
   let readabilityScore = 50; // Score de base moyen
@@ -822,21 +903,43 @@ async function analyzeWebsite(url) {
   if (hasOpenGraph) features.push('Open Graph');
   if (hasCanonical) features.push('URL Canonique');
 
-  // === RECOMMANDATIONS INTELLIGENTES ===
+  // === RECOMMANDATIONS INTELLIGENTES AMÉLIORÉES ===
   const recommendations = [];
+  
+  // Sécurité critique
   if (!https) recommendations.push({ priority: 'critical', text: 'Activez HTTPS immédiatement', impact: 'Sécurité' });
+  if (mixedContent) recommendations.push({ priority: 'critical', text: 'Corrigez le contenu mixte (HTTP dans HTTPS)', impact: 'Sécurité' });
+  
+  // SEO prioritaire
   if (!hasViewport) recommendations.push({ priority: 'high', text: 'Ajoutez une meta viewport', impact: 'Mobile' });
   if (!metaDescription) recommendations.push({ priority: 'high', text: 'Ajoutez une meta description', impact: 'SEO' });
   if (h1Count === 0) recommendations.push({ priority: 'high', text: 'Ajoutez une balise H1', impact: 'SEO' });
   if (h1Count > 1) recommendations.push({ priority: 'medium', text: 'Limitez-vous à une seule H1', impact: 'SEO' });
+  if (!hasCanonical) recommendations.push({ priority: 'medium', text: 'Ajoutez une URL canonique', impact: 'SEO' });
+  if (structuredData === 0) recommendations.push({ priority: 'medium', text: 'Ajoutez des données structurées (Schema.org)', impact: 'SEO' });
+  
+  // Accessibilité
   if (imagesWithoutAlt > 0) recommendations.push({ priority: 'medium', text: `Ajoutez des attributs alt aux ${imagesWithoutAlt} images`, impact: 'Accessibilité' });
+  if (linksWithoutText > 0) recommendations.push({ priority: 'medium', text: `${linksWithoutText} liens sans texte détectés`, impact: 'Accessibilité' });
+  if (!headingHierarchyValid) recommendations.push({ priority: 'medium', text: 'Corrigez la hiérarchie des titres (H1→H2→H3)', impact: 'Accessibilité' });
+  
+  // Sécurité
   if (!securityHeaders.contentSecurityPolicy) recommendations.push({ priority: 'medium', text: 'Ajoutez un Content-Security-Policy', impact: 'Sécurité' });
-  if (semanticElements < 3) recommendations.push({ priority: 'low', text: 'Utilisez plus d\'éléments sémantiques HTML5', impact: 'SEO' });
+  if (!hasSubresourceIntegrity && externalScripts > 0) recommendations.push({ priority: 'medium', text: 'Ajoutez SRI pour les scripts externes', impact: 'Sécurité' });
+  if (!hasSecureCookies && cookieInfo) recommendations.push({ priority: 'medium', text: 'Sécurisez vos cookies (Secure, HttpOnly)', impact: 'Sécurité' });
+  
+  // Performance
+  if (blockingScripts > 5) recommendations.push({ priority: 'medium', text: `${blockingScripts} scripts bloquants détectés - utilisez async/defer`, impact: 'Performance' });
+  if (!hasCompression) recommendations.push({ priority: 'medium', text: 'Activez la compression Gzip/Brotli', impact: 'Performance' });
+  if (lazyLoadImages === 0 && imageCount > 5) recommendations.push({ priority: 'medium', text: 'Activez le lazy loading pour les images', impact: 'Performance' });
   if (inlineStyles > 10) recommendations.push({ priority: 'low', text: 'Réduisez les styles inline', impact: 'Performance' });
   if (scriptCount > 15) recommendations.push({ priority: 'medium', text: 'Optimisez le nombre de scripts', impact: 'Performance' });
+  
+  // UX/Design
+  if (semanticElements < 3) recommendations.push({ priority: 'low', text: 'Utilisez plus d\'éléments sémantiques HTML5', impact: 'SEO' });
   if (!hasOpenGraph) recommendations.push({ priority: 'low', text: 'Ajoutez des balises Open Graph', impact: 'Réseaux sociaux' });
-  if (!hasCanonical) recommendations.push({ priority: 'low', text: 'Ajoutez une URL canonique', impact: 'SEO' });
-  if (lazyLoadImages === 0 && imageCount > 5) recommendations.push({ priority: 'medium', text: 'Activez le lazy loading pour les images', impact: 'Performance' });
+  if (!hasMediaQueries && hasViewport) recommendations.push({ priority: 'low', text: 'Ajoutez des media queries pour le responsive', impact: 'Mobile' });
+  if (ctaButtons === 0 && forms === 0) recommendations.push({ priority: 'low', text: 'Ajoutez des appels à l\'action (CTA)', impact: 'Conversion' });
 
   // === SCORE GLOBAL ===
   const overallScore = Math.round((securityScore * 0.3) + (uxScore * 0.5) + (devScore * 0.2));
@@ -854,7 +957,21 @@ async function analyzeWebsite(url) {
       imageCount,
       domElements,
       inlineStyles,
-      loadTime: loadTime < 1000 ? 'Excellent' : loadTime < 3000 ? 'Bon' : 'À améliorer'
+      loadTime: loadTime < 1000 ? 'Excellent' : loadTime < 3000 ? 'Bon' : 'À améliorer',
+      // Nouvelles métriques de performance
+      blockingScripts,
+      blockingCSS,
+      hasCompression,
+      compressionType: contentEncoding,
+      externalScripts,
+      externalCSS,
+      performanceScore: Math.round(
+        (loadTime < 1000 ? 30 : loadTime < 3000 ? 20 : 10) +
+        (hasCompression ? 20 : 0) +
+        (blockingScripts < 3 ? 20 : blockingScripts < 5 ? 10 : 0) +
+        (lazyLoadImages > imageCount * 0.5 ? 20 : lazyLoadImages > 0 ? 10 : 0) +
+        (inlineStyles < 5 ? 10 : inlineStyles < 10 ? 5 : 0)
+      )
     },
     features,
     techStack: finalTechStack,
@@ -871,7 +988,12 @@ async function analyzeWebsite(url) {
         xssRisk: securityHeaders.contentSecurityPolicy ? 'Low' : 'Medium',
         sqliRisk: 'Unknown'
       },
-      vulnerabilitiesList
+      vulnerabilitiesList,
+      // Nouvelles métriques de sécurité
+      mixedContent,
+      hasSubresourceIntegrity,
+      hasSecureCookies,
+      securityGrade: securityScore >= 90 ? 'A' : securityScore >= 80 ? 'B' : securityScore >= 70 ? 'C' : securityScore >= 60 ? 'D' : 'F'
     },
     ux: {
       title,
@@ -898,17 +1020,75 @@ async function analyzeWebsite(url) {
       lazyLoadRatio: imageCount > 0 ? Math.round((lazyLoadImages / imageCount) * 100) : 0,
       score: uxScore,
       issues: uxIssues,
-      accessibility: {
-        ariaCount: ariaLabels,
-        roleCount: roleAttributes,
-        semanticElements,
-        formLabels,
-        formInputs,
-        score: Math.min(100, Math.round(((ariaLabels * 2) + (roleAttributes * 2) + (semanticElements * 3)) / 2))
-      },
       mobileFriendliness: hasViewport ? 100 : 0,
       readabilityScore,
       navigationClarity
+    },
+    // === NOUVELLES SECTIONS D'ANALYSE ===
+    seo: {
+      score: uxScore, // Réutilisation du score UX pour SEO
+      metaRobots,
+      hasCanonical,
+      canonicalUrl,
+      structuredData,
+      hasAmpVersion,
+      wordCount,
+      contentQuality: wordCount > 500 ? 'Bon' : wordCount > 200 ? 'Moyen' : 'Faible',
+      headingsStructure: headings,
+      headingHierarchyValid,
+      internalLinks: internalLinks,
+      externalLinks: externalLinks,
+      grade: uxScore >= 90 ? 'A+' : uxScore >= 80 ? 'A' : uxScore >= 70 ? 'B' : uxScore >= 60 ? 'C' : 'D'
+    },
+    accessibility: {
+      score: Math.min(100, Math.round(((ariaLabels * 2) + (roleAttributes * 2) + (semanticElements * 3)) / 2)),
+      ariaCount: ariaLabels,
+      roleCount: roleAttributes,
+      semanticElements,
+      formLabels,
+      formInputs,
+      linksWithoutText,
+      buttonsCount,
+      headingHierarchyValid,
+      imagesWithoutAlt,
+      wcagLevel: ariaLabels > 5 && semanticElements > 5 && imagesWithoutAlt === 0 ? 'AA' : ariaLabels > 0 ? 'A' : 'Non conforme'
+    },
+    mobile: {
+      hasViewport: hasViewport,
+      hasResponsiveViewport,
+      hasMediaQueries,
+      touchIcons,
+      mobileScore: Math.round(
+        (hasResponsiveViewport ? 40 : hasViewport ? 20 : 0) +
+        (hasMediaQueries ? 30 : 0) +
+        (touchIcons > 0 ? 15 : 0) +
+        (lazyLoadImages > 0 ? 15 : 0)
+      ),
+      mobileFriendly: hasResponsiveViewport && hasMediaQueries
+    },
+    content: {
+      language: detectedLang,
+      wordCount,
+      textLength,
+      hasDateElements: dateElements > 0,
+      contentFreshness: dateElements > 0 ? 'Récent' : 'Inconnu',
+      textToHtmlRatio,
+      readabilityScore
+    },
+    conversion: {
+      ctaButtons,
+      forms,
+      formInputs,
+      requiredFields,
+      popups,
+      conversionOptimized: ctaButtons > 0 && forms > 0,
+      conversionScore: Math.round(
+        (ctaButtons > 0 ? 30 : 0) +
+        (forms > 0 ? 30 : 0) +
+        (requiredFields > 0 ? 20 : 0) +
+        (popups > 0 ? 10 : 0) +
+        (hasAuth || hasEcommerce ? 10 : 0)
+      )
     },
     designType: techStack.some(t => t.name === 'WordPress') ? 'CMS' : 
                 techStack.some(t => ['Wix', 'Squarespace', 'Webflow'].includes(t.name)) ? 'Website Builder' :
