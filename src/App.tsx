@@ -146,7 +146,15 @@ export default function App() {
   React.useEffect(() => {
     const saved = localStorage.getItem('webAnalyzerHistory');
     if (saved) {
-      try { setHistory(JSON.parse(saved)); } catch (e) {}
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setHistory(parsed);
+        }
+      } catch (e) {
+        console.error("Failed to parse history from localStorage:", e);
+        localStorage.removeItem('webAnalyzerHistory');
+      }
     }
     fetchClientErrors();
   }, []);
@@ -213,13 +221,24 @@ export default function App() {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
+        signal: controller.signal,
       });
 
-      const data = await response.json();
+      clearTimeout(timeoutId);
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error("Server returned invalid JSON response");
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to analyze website');
@@ -229,10 +248,19 @@ export default function App() {
       
       const newHistory = [data, ...history.filter(h => h.url !== data.url || new Date(data.timestamp).getTime() - new Date(h.timestamp).getTime() > 60000)].slice(0, 20);
       setHistory(newHistory);
-      localStorage.setItem('webAnalyzerHistory', JSON.stringify(newHistory));
+      
+      try {
+        localStorage.setItem('webAnalyzerHistory', JSON.stringify(newHistory));
+      } catch (e) {
+        console.error("Failed to save history to localStorage:", e);
+      }
 
     } catch (err: any) {
-      setError(err.message);
+      if (err.name === 'AbortError') {
+        setError("Request timed out. The website took too long to analyze.");
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }

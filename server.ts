@@ -2,15 +2,18 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import * as cheerio from "cheerio";
 
-// Cache system
+// Cache system with size limit
 const analysisCache = new Map<string, { data: any, timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 60; // 1 hour
+const MAX_CACHE_SIZE = 100;
+const MAX_HTML_SIZE = 5 * 1024 * 1024; // 5MB
+const FETCH_TIMEOUT = 15000; // 15 seconds
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '1mb' }));
 
   // Middleware to log API requests
   app.use((req, res, next) => {
@@ -23,17 +26,29 @@ async function startServer() {
   // API routes FIRST
   app.post("/api/analyze", async (req, res) => {
     try {
-      const { url } = req.body;
-      if (!url) {
-        return res.status(400).json({ error: "URL is required" });
+      // Validate request body
+      if (!req.body || typeof req.body !== 'object') {
+        return res.status(400).json({ error: "Invalid request body" });
       }
 
-      let targetUrl = url;
+      const { url } = req.body;
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ error: "URL is required and must be a string" });
+      }
+
+      let targetUrl = url.trim();
       if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
         targetUrl = "https://" + targetUrl;
       }
 
-      const urlObj = new URL(targetUrl);
+      // Validate URL format
+      let urlObj;
+      try {
+        urlObj = new URL(targetUrl);
+      } catch (e) {
+        return res.status(400).json({ error: "Invalid URL format" });
+      }
+
       if (urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1") {
         return res.status(400).json({ error: "Localhost scanning is not allowed" });
       }
@@ -45,18 +60,54 @@ async function startServer() {
       }
 
       const startTime = Date.now();
-      const response = await fetch(targetUrl, {
-        headers: {
-          "User-Agent": "WebAnalyzerPro/1.0",
-        },
-        redirect: "follow",
-      });
+      
+      // Fetch with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+      
+      let response;
+      try {
+        response = await fetch(targetUrl, {
+          headers: {
+            "User-Agent": "WebAnalyzerPro/1.0",
+          },
+          redirect: "follow",
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
+      // Validate HTTP status
+      if (!response.ok) {
+        return res.status(400).json({ error: `Website returned status ${response.status}` });
+      }
+
+      // Check content-type
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('text/html')) {
+        return res.status(400).json({ error: "URL does not return HTML content" });
+      }
+
+      // Get HTML with size limit
       const html = await response.text();
+      if (html.length > MAX_HTML_SIZE) {
+        return res.status(400).json({ error: `HTML size exceeds limit (${Math.round(html.length / 1024 / 1024)}MB > 5MB)` });
+      }
+
+      if (html.length === 0) {
+        return res.status(400).json({ error: "Website returned empty HTML" });
+      }
+
       const loadTime = Date.now() - startTime;
       const htmlSizeKB = Math.round(html.length / 1024);
       
-      const $ = cheerio.load(html);
+      let $;
+      try {
+        $ = cheerio.load(html);
+      } catch (e) {
+        return res.status(400).json({ error: "Failed to parse HTML content" });
+      }
       
       // 1. Tech Detection
       interface Tech { name: string; version?: string; category: string; }
@@ -68,11 +119,23 @@ async function startServer() {
       const $all = $("*");
       const domElementsCount = $all.length;
 
-      const scripts = $("script").map((i, el) => $(el).attr("src") || $(el).text()).get().join(" ").toLowerCase();
-      const links = $("link").map((i, el) => $(el).attr("href")).get().join(" ").toLowerCase();
-      const meta = $("meta").map((i, el) => $(el).attr("content") || $(el).attr("name") || $(el).attr("property")).get().join(" ").toLowerCase();
-      const classes = $all.map((i, el) => $(el).attr("class")).get().join(" ").toLowerCase();
-      const allHeaders = JSON.stringify(Object.fromEntries(response.headers.entries())).toLowerCase();
+      let scripts = "";
+      let links = "";
+      let meta = "";
+      let classes = "";
+      let allHeaders = "";
+      
+      try {
+        scripts = $("script").map((i, el) => $(el).attr("src") || $(el).text()).get().join(" ").toLowerCase();
+        links = $("link").map((i, el) => $(el).attr("href")).get().join(" ").toLowerCase();
+        meta = $("meta").map((i, el) => $(el).attr("content") || $(el).attr("name") || $(el).attr("property")).get().join(" ").toLowerCase();
+        classes = $all.map((i, el) => $(el).attr("class")).get().join(" ").toLowerCase();
+        allHeaders = JSON.stringify(Object.fromEntries(response.headers.entries())).toLowerCase();
+      } catch (e) {
+        console.error("Error parsing HTML attributes:", e);
+        // Continue with empty values
+      }
+      
       const metaGenerator = $("meta[name='generator']").attr("content") || "";
       const htmlContent = html.toLowerCase();
 
@@ -99,7 +162,14 @@ async function startServer() {
       let externalScriptsContent = "";
       try {
         const scriptResponses = await Promise.all(
-          mainScripts.map(url => fetch(url, { signal: AbortSignal.timeout(3000) }).then(res => res.text()).catch(() => ""))
+          mainScripts.map(url => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            return fetch(url, { signal: controller.signal })
+              .then(res => res.text())
+              .catch(() => "")
+              .finally(() => clearTimeout(timeoutId));
+          })
         );
         externalScriptsContent = scriptResponses.join(" ").toLowerCase();
       } catch (e) {
@@ -810,7 +880,12 @@ async function startServer() {
         }
       };
 
-      // Save to cache
+      // Save to cache with size limit
+      if (analysisCache.size >= MAX_CACHE_SIZE) {
+        // Remove oldest entry
+        const firstKey = analysisCache.keys().next().value;
+        if (firstKey) analysisCache.delete(firstKey);
+      }
       analysisCache.set(targetUrl, { data: responseData, timestamp: Date.now() });
 
       res.json(responseData);
@@ -864,15 +939,34 @@ async function startServer() {
     app.use(express.static("dist"));
     
     // Serve index.html for SPA routing (only in production, after static files)
+    // Exclude API routes from SPA fallback
     app.get("*", (req, res) => {
-      res.sendFile(process.cwd() + "/dist/index.html");
+      if (req.path.startsWith("/api/")) {
+        return res.status(404).json({ error: "API endpoint not found" });
+      }
+      const indexPath = "dist/index.html";
+      res.sendFile(indexPath, { root: process.cwd() }, (err) => {
+        if (err) {
+          console.error("Error serving index.html:", err);
+          res.status(500).json({ error: "Failed to serve application" });
+        }
+      });
     });
   }
 
   // Serve index.html for SPA routing (development)
   if (process.env.NODE_ENV !== "production") {
     app.get("*", (req, res) => {
-      res.sendFile(process.cwd() + "/index.html");
+      if (req.path.startsWith("/api/")) {
+        return res.status(404).json({ error: "API endpoint not found" });
+      }
+      const indexPath = "index.html";
+      res.sendFile(indexPath, { root: process.cwd() }, (err) => {
+        if (err) {
+          console.error("Error serving index.html:", err);
+          res.status(500).json({ error: "Failed to serve application" });
+        }
+      });
     });
   }
 
