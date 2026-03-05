@@ -1,11 +1,11 @@
-import { analyzeWebsite } from '../lib/analyzer.js';
+const { analyzeWebsite } = require('../lib/analyzer.js');
 
 // Cache system with size limit
 const analysisCache = new Map();
 const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 const MAX_CACHE_SIZE = 100;
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Content-Type', 'application/json');
   
