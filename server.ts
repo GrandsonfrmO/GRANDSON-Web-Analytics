@@ -933,7 +933,28 @@ async function startServer() {
       server: { middlewareMode: true },
       appType: "spa",
     });
-    app.use(vite.middlewares);
+    
+    // Skip Vite middleware for API routes
+    app.use((req, res, next) => {
+      if (req.path.startsWith("/api/")) {
+        return next();
+      }
+      vite.middlewares(req, res, next);
+    });
+    
+    // Serve index.html for SPA routing (development) - AFTER Vite middleware
+    app.get("*", (req, res) => {
+      if (req.path.startsWith("/api/")) {
+        return res.status(404).json({ error: "API endpoint not found" });
+      }
+      const indexPath = "index.html";
+      res.sendFile(indexPath, { root: process.cwd() }, (err) => {
+        if (err) {
+          console.error("Error serving index.html:", err);
+          res.status(500).json({ error: "Failed to serve application" });
+        }
+      });
+    });
   } else {
     // Serve static files in production
     app.use(express.static("dist"));
@@ -945,22 +966,6 @@ async function startServer() {
         return res.status(404).json({ error: "API endpoint not found" });
       }
       const indexPath = "dist/index.html";
-      res.sendFile(indexPath, { root: process.cwd() }, (err) => {
-        if (err) {
-          console.error("Error serving index.html:", err);
-          res.status(500).json({ error: "Failed to serve application" });
-        }
-      });
-    });
-  }
-
-  // Serve index.html for SPA routing (development)
-  if (process.env.NODE_ENV !== "production") {
-    app.get("*", (req, res) => {
-      if (req.path.startsWith("/api/")) {
-        return res.status(404).json({ error: "API endpoint not found" });
-      }
-      const indexPath = "index.html";
       res.sendFile(indexPath, { root: process.cwd() }, (err) => {
         if (err) {
           console.error("Error serving index.html:", err);
