@@ -30,7 +30,7 @@ async function analyzeWebsite(url) {
   let response;
   try {
     response = await fetch(targetUrl, {
-      headers: { 'User-Agent': 'WebAnalyzerPro/1.0' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
       redirect: 'follow',
       signal: controller.signal,
     });
@@ -39,8 +39,7 @@ async function analyzeWebsite(url) {
   }
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Unknown error');
-    throw new Error(`Website returned status ${response.status}: ${errorText.substring(0, 100)}`);
+    throw new Error(`Website returned status ${response.status}`);
   }
 
   const contentType = response.headers.get('content-type') || '';
@@ -73,93 +72,284 @@ async function analyzeWebsite(url) {
     throw new Error('Failed to parse HTML content');
   }
 
+  // === ANALYSE AVANCÉE DES TECHNOLOGIES ===
   const techStack = [];
-  const features = [];
-  const recommendations = [];
+  const htmlLower = html.toLowerCase();
+  
+  // Frameworks JS
+  if (htmlLower.includes('react') || $('script[src*="react"]').length) techStack.push({ name: 'React', category: 'Framework JS', confidence: 'high' });
+  if (htmlLower.includes('vue') || $('script[src*="vue"]').length) techStack.push({ name: 'Vue.js', category: 'Framework JS', confidence: 'high' });
+  if (htmlLower.includes('angular') || $('script[src*="angular"]').length) techStack.push({ name: 'Angular', category: 'Framework JS', confidence: 'high' });
+  if (htmlLower.includes('next') || $('script[src*="next"]').length) techStack.push({ name: 'Next.js', category: 'Framework', confidence: 'high' });
+  if (htmlLower.includes('nuxt')) techStack.push({ name: 'Nuxt.js', category: 'Framework', confidence: 'medium' });
+  if (htmlLower.includes('svelte')) techStack.push({ name: 'Svelte', category: 'Framework JS', confidence: 'medium' });
+  
+  // CSS Frameworks
+  if (htmlLower.includes('tailwind') || $('link[href*="tailwind"]').length) techStack.push({ name: 'Tailwind CSS', category: 'CSS Framework', confidence: 'high' });
+  if (htmlLower.includes('bootstrap') || $('link[href*="bootstrap"]').length) techStack.push({ name: 'Bootstrap', category: 'CSS Framework', confidence: 'high' });
+  if (htmlLower.includes('bulma')) techStack.push({ name: 'Bulma', category: 'CSS Framework', confidence: 'medium' });
+  if (htmlLower.includes('foundation')) techStack.push({ name: 'Foundation', category: 'CSS Framework', confidence: 'medium' });
+  
+  // CMS
+  if (htmlLower.includes('wp-content') || htmlLower.includes('wordpress')) techStack.push({ name: 'WordPress', category: 'CMS', confidence: 'high' });
+  if (htmlLower.includes('shopify')) techStack.push({ name: 'Shopify', category: 'E-commerce', confidence: 'high' });
+  if (htmlLower.includes('wix')) techStack.push({ name: 'Wix', category: 'Website Builder', confidence: 'high' });
+  if (htmlLower.includes('squarespace')) techStack.push({ name: 'Squarespace', category: 'Website Builder', confidence: 'high' });
+  
+  // Analytics & Marketing
+  if (htmlLower.includes('google-analytics') || htmlLower.includes('gtag')) techStack.push({ name: 'Google Analytics', category: 'Analytics', confidence: 'high' });
+  if (htmlLower.includes('gtm') || htmlLower.includes('googletagmanager')) techStack.push({ name: 'Google Tag Manager', category: 'Tag Manager', confidence: 'high' });
+  if (htmlLower.includes('facebook') && htmlLower.includes('pixel')) techStack.push({ name: 'Facebook Pixel', category: 'Marketing', confidence: 'high' });
+  if (htmlLower.includes('hotjar')) techStack.push({ name: 'Hotjar', category: 'Analytics', confidence: 'high' });
 
-  const title = $('title').text().trim() || 'Missing';
-  const hasMetaDescription = !!$('meta[name="description"]').attr('content');
+  // === ANALYSE DE SÉCURITÉ AVANCÉE ===
+  const https = targetUrl.startsWith('https://');
+  const securityHeaders = {
+    strictTransportSecurity: response.headers.get('strict-transport-security'),
+    contentSecurityPolicy: response.headers.get('content-security-policy'),
+    xFrameOptions: response.headers.get('x-frame-options'),
+    xContentTypeOptions: response.headers.get('x-content-type-options'),
+    referrerPolicy: response.headers.get('referrer-policy'),
+  };
+
+  const vulnerabilities = [];
+  let securityScore = https ? 80 : 30;
+  
+  if (!https) vulnerabilities.push({ severity: 'critical', issue: 'Pas de HTTPS', impact: 'Données non chiffrées' });
+  if (!securityHeaders.strictTransportSecurity && https) {
+    vulnerabilities.push({ severity: 'medium', issue: 'HSTS manquant', impact: 'Vulnérable aux attaques downgrade' });
+    securityScore -= 10;
+  }
+  if (!securityHeaders.contentSecurityPolicy) {
+    vulnerabilities.push({ severity: 'medium', issue: 'CSP manquant', impact: 'Vulnérable aux attaques XSS' });
+    securityScore -= 10;
+  }
+  if (!securityHeaders.xFrameOptions) {
+    vulnerabilities.push({ severity: 'low', issue: 'X-Frame-Options manquant', impact: 'Vulnérable au clickjacking' });
+    securityScore -= 5;
+  }
+
+  // === ANALYSE UX/SEO APPROFONDIE ===
+  const title = $('title').text().trim();
+  const metaDescription = $('meta[name="description"]').attr('content') || '';
   const hasViewport = !!$('meta[name="viewport"]').attr('content');
-  const lang = $('html').attr('lang') || 'Missing';
+  const lang = $('html').attr('lang') || '';
   const h1Count = $('h1').length;
+  const h1Text = $('h1').first().text().trim();
   const imageCount = $('img').length;
+  const imagesWithAlt = $('img[alt]').length;
+  const imagesWithoutAlt = imageCount - imagesWithAlt;
   const linkCount = $('a').length;
+  const externalLinks = $('a[href^="http"]').length;
+  const internalLinks = linkCount - externalLinks;
   const domElements = $('*').length;
   const scriptCount = $('script').length;
   const cssCount = $('link[rel="stylesheet"]').length;
+  const inlineStyles = $('[style]').length;
 
-  // Accessibility
-  const ariaCount = $('[aria-label], [aria-labelledby], [aria-describedby], [role]').length;
+  // Accessibilité
+  const ariaLabels = $('[aria-label], [aria-labelledby], [aria-describedby]').length;
+  const roleAttributes = $('[role]').length;
   const semanticElements = $('header, nav, main, article, section, aside, footer').length;
+  const formLabels = $('label').length;
+  const formInputs = $('input, textarea, select').length;
 
-  const https = targetUrl.startsWith('https://');
-  let securityScore = https ? 70 : 40;
-  if (!hasViewport) securityScore -= 10;
-  if (!hasMetaDescription) securityScore -= 10;
+  let uxScore = 100;
+  const uxIssues = [];
 
-  let uxScore = 70;
-  if (!hasViewport) uxScore -= 20;
-  if (!hasMetaDescription) uxScore -= 10;
-  if (h1Count !== 1) uxScore -= 10;
+  if (!title || title.length < 10) {
+    uxScore -= 15;
+    uxIssues.push('Titre manquant ou trop court');
+  } else if (title.length > 60) {
+    uxScore -= 5;
+    uxIssues.push('Titre trop long (>60 caractères)');
+  }
 
-  const htmlContent = html.toLowerCase();
-  if (htmlContent.includes('react')) techStack.push({ name: 'React', category: 'Library' });
-  if (htmlContent.includes('vue')) techStack.push({ name: 'Vue.js', category: 'Framework' });
-  if (htmlContent.includes('angular')) techStack.push({ name: 'Angular', category: 'Framework' });
-  if (htmlContent.includes('next')) techStack.push({ name: 'Next.js', category: 'Framework' });
-  if (htmlContent.includes('tailwind')) techStack.push({ name: 'Tailwind CSS', category: 'Framework UI' });
-  if (htmlContent.includes('bootstrap')) techStack.push({ name: 'Bootstrap', category: 'Framework UI' });
+  if (!metaDescription || metaDescription.length < 50) {
+    uxScore -= 15;
+    uxIssues.push('Meta description manquante ou trop courte');
+  } else if (metaDescription.length > 160) {
+    uxScore -= 5;
+    uxIssues.push('Meta description trop longue (>160 caractères)');
+  }
 
+  if (!hasViewport) {
+    uxScore -= 20;
+    uxIssues.push('Meta viewport manquant - site non responsive');
+  }
+
+  if (!lang) {
+    uxScore -= 10;
+    uxIssues.push('Attribut lang manquant sur <html>');
+  }
+
+  if (h1Count === 0) {
+    uxScore -= 15;
+    uxIssues.push('Aucune balise H1 trouvée');
+  } else if (h1Count > 1) {
+    uxScore -= 10;
+    uxIssues.push(`${h1Count} balises H1 trouvées (recommandé: 1)`);
+  }
+
+  if (imagesWithoutAlt > 0) {
+    uxScore -= Math.min(15, imagesWithoutAlt * 2);
+    uxIssues.push(`${imagesWithoutAlt} images sans attribut alt`);
+  }
+
+  if (semanticElements < 3) {
+    uxScore -= 10;
+    uxIssues.push('Peu d\'éléments sémantiques HTML5');
+  }
+
+  if (inlineStyles > 10) {
+    uxScore -= 5;
+    uxIssues.push('Trop de styles inline (mauvaise pratique)');
+  }
+
+  uxScore = Math.max(0, uxScore);
+
+  // === DÉTECTION DU NIVEAU DE DÉVELOPPEUR ===
+  let devLevel = 'Débutant';
+  let devScore = 0;
+
+  if (techStack.length >= 3) devScore += 20;
+  if (semanticElements >= 5) devScore += 15;
+  if (ariaLabels > 0 || roleAttributes > 0) devScore += 15;
+  if (securityHeaders.contentSecurityPolicy) devScore += 15;
+  if (uxScore >= 80) devScore += 20;
+  if (inlineStyles < 5) devScore += 10;
+  if (scriptCount > 0 && scriptCount < 20) devScore += 5;
+
+  if (devScore >= 70) devLevel = 'Expert';
+  else if (devScore >= 50) devLevel = 'Avancé';
+  else if (devScore >= 30) devLevel = 'Intermédiaire';
+
+  // === ESTIMATION DE PRIX RÉALISTE ===
+  let complexityScore = 0;
+  
+  // Complexité basée sur le contenu
+  complexityScore += Math.min(30, domElements / 100);
+  complexityScore += Math.min(20, scriptCount * 2);
+  complexityScore += techStack.length * 5;
+  complexityScore += linkCount > 50 ? 15 : linkCount > 20 ? 10 : 5;
+  complexityScore += imageCount > 30 ? 15 : imageCount > 10 ? 10 : 5;
+  
+  const hasEcommerce = htmlLower.includes('cart') || htmlLower.includes('panier') || htmlLower.includes('checkout');
+  const hasAuth = htmlLower.includes('login') || htmlLower.includes('signin') || htmlLower.includes('connexion');
+  const hasForm = $('form').length > 0;
+  
+  if (hasEcommerce) complexityScore += 30;
+  if (hasAuth) complexityScore += 20;
+  if (hasForm) complexityScore += 10;
+
+  const estimatedDays = Math.ceil(complexityScore / 10);
+  const freelancePrice = estimatedDays * 400; // 400€/jour freelance
+  const agencyPrice = estimatedDays * 800; // 800€/jour agence
+
+  const pricingFactors = [];
+  if (hasEcommerce) pricingFactors.push('E-commerce (+30%)');
+  if (hasAuth) pricingFactors.push('Authentification (+20%)');
+  if (techStack.length >= 5) pricingFactors.push('Stack technique avancé (+15%)');
+  if (domElements > 1000) pricingFactors.push('Site complexe (+20%)');
+
+  // === FEATURES DÉTECTÉES ===
+  const features = [];
   if ($('form').length > 0) features.push('Formulaires');
   if ($('input[type="search"]').length > 0) features.push('Recherche');
   if ($('video').length > 0) features.push('Vidéo');
+  if ($('audio').length > 0) features.push('Audio');
   if ($('canvas').length > 0) features.push('Canvas/WebGL');
+  if ($('iframe').length > 0) features.push('iFrames');
+  if (htmlLower.includes('map') || htmlLower.includes('google.maps')) features.push('Carte interactive');
+  if (hasAuth) features.push('Authentification');
+  if (hasEcommerce) features.push('E-commerce');
+  if ($('[data-aos], [data-animate]').length > 0) features.push('Animations');
 
-  if (!https) recommendations.push('Activez HTTPS pour sécuriser votre site');
-  if (!hasMetaDescription) recommendations.push('Ajoutez une meta description');
-  if (!hasViewport) recommendations.push('Ajoutez une meta viewport pour le responsive');
-  if (h1Count === 0) recommendations.push('Ajoutez une balise H1');
-  if (h1Count > 1) recommendations.push('Limitez-vous à une seule balise H1');
+  // === RECOMMANDATIONS INTELLIGENTES ===
+  const recommendations = [];
+  if (!https) recommendations.push({ priority: 'critical', text: 'Activez HTTPS immédiatement', impact: 'Sécurité' });
+  if (!hasViewport) recommendations.push({ priority: 'high', text: 'Ajoutez une meta viewport', impact: 'Mobile' });
+  if (!metaDescription) recommendations.push({ priority: 'high', text: 'Ajoutez une meta description', impact: 'SEO' });
+  if (h1Count === 0) recommendations.push({ priority: 'high', text: 'Ajoutez une balise H1', impact: 'SEO' });
+  if (h1Count > 1) recommendations.push({ priority: 'medium', text: 'Limitez-vous à une seule H1', impact: 'SEO' });
+  if (imagesWithoutAlt > 0) recommendations.push({ priority: 'medium', text: `Ajoutez des attributs alt aux ${imagesWithoutAlt} images`, impact: 'Accessibilité' });
+  if (!securityHeaders.contentSecurityPolicy) recommendations.push({ priority: 'medium', text: 'Ajoutez un Content-Security-Policy', impact: 'Sécurité' });
+  if (semanticElements < 3) recommendations.push({ priority: 'low', text: 'Utilisez plus d\'éléments sémantiques HTML5', impact: 'SEO' });
+  if (inlineStyles > 10) recommendations.push({ priority: 'low', text: 'Réduisez les styles inline', impact: 'Performance' });
+  if (scriptCount > 15) recommendations.push({ priority: 'medium', text: 'Optimisez le nombre de scripts', impact: 'Performance' });
+
+  // === SCORE GLOBAL ===
+  const overallScore = Math.round((securityScore * 0.3) + (uxScore * 0.5) + (devScore * 0.2));
 
   return {
     url: targetUrl,
     timestamp: new Date().toISOString(),
     status: response.status,
     loadTimeMs: loadTime,
-    overallScore: Math.round((securityScore + uxScore) / 2),
-    performance: { htmlSizeKB, scriptCount, cssCount, imageCount },
+    overallScore,
+    performance: {
+      htmlSizeKB,
+      scriptCount,
+      cssCount,
+      imageCount,
+      domElements,
+      inlineStyles,
+      loadTime: loadTime < 1000 ? 'Excellent' : loadTime < 3000 ? 'Bon' : 'À améliorer'
+    },
     features,
     techStack,
-    security: { https, score: securityScore, vulnerabilitiesList: [] },
+    security: {
+      https,
+      score: securityScore,
+      headers: securityHeaders,
+      vulnerabilitiesList: vulnerabilities
+    },
     ux: {
       title,
-      hasMetaDescription,
+      titleLength: title.length,
+      metaDescription,
+      metaDescriptionLength: metaDescription.length,
+      hasMetaDescription: !!metaDescription,
       hasViewport,
       lang,
       h1Count,
+      h1Text,
       imageCount,
+      imagesWithAlt,
+      imagesWithoutAlt,
       linkCount,
+      internalLinks,
+      externalLinks,
       domElements,
       score: uxScore,
+      issues: uxIssues,
       accessibility: {
-        ariaCount,
-        semanticElements
+        ariaCount: ariaLabels,
+        roleCount: roleAttributes,
+        semanticElements,
+        formLabels,
+        formInputs,
+        score: Math.round((ariaLabels + roleAttributes + semanticElements) / 3 * 10)
       },
       mobileFriendliness: hasViewport ? 100 : 0
     },
-    designType: 'Unknown',
+    designType: techStack.some(t => t.name.includes('WordPress')) ? 'CMS' : 
+                techStack.some(t => t.name.includes('Wix') || t.name.includes('Squarespace')) ? 'Website Builder' :
+                techStack.length >= 3 ? 'Custom' : 'Simple',
     aiProbability: 0,
-    developerLevel: 'Unknown',
+    developerLevel: devLevel,
+    developerScore: devScore,
     recommendations,
     pricing: {
-      freelance: 0,
-      agency: 0,
-      estimatedDays: 0,
-      resaleValue: 0,
+      freelance: freelancePrice,
+      agency: agencyPrice,
+      estimatedDays,
+      complexityScore: Math.round(complexityScore),
+      resaleValue: Math.round(freelancePrice * 0.7),
       domainAgeYears: 0,
       backlinkProfile: 0,
       trafficVolume: 0,
-      pricingFactors: []
+      pricingFactors
     },
   };
 }
