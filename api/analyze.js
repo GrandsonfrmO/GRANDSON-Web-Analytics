@@ -525,30 +525,241 @@ async function analyzeWebsite(url) {
   const finalTechStack = techStack.slice(0, 20);
 
 
-  // === ANALYSE DE SÉCURITÉ AVANCÉE ===
+  // === ANALYSE DE SÉCURITÉ ULTRA-AVANCÉE ===
   const vulnerabilities = [];
   const vulnerabilitiesList = [];
-  let securityScore = https ? 80 : 30;
+  let securityScore = 100; // On part de 100 et on retire des points
   
+  // 1. HTTPS/TLS (Critique - 30 points)
   if (!https) {
-    vulnerabilities.push({ severity: 'critical', issue: 'Pas de HTTPS', impact: 'Données non chiffrées' });
-    vulnerabilitiesList.push({ severity: 'High', title: 'HTTPS non activé', description: 'Le site n\'utilise pas HTTPS, les données ne sont pas chiffrées' });
+    vulnerabilities.push({ severity: 'critical', issue: 'Pas de HTTPS', impact: 'Données non chiffrées, interception possible' });
+    vulnerabilitiesList.push({ 
+      severity: 'High', 
+      title: 'HTTPS non activé', 
+      description: 'Le site n\'utilise pas HTTPS. Toutes les données transitent en clair et peuvent être interceptées.' 
+    });
+    securityScore -= 30;
   }
+  
+  // 2. HSTS - HTTP Strict Transport Security (15 points)
   if (!securityHeaders.strictTransportSecurity && https) {
-    vulnerabilities.push({ severity: 'medium', issue: 'HSTS manquant', impact: 'Vulnérable aux attaques downgrade' });
-    vulnerabilitiesList.push({ severity: 'Medium', title: 'HSTS manquant', description: 'Le header Strict-Transport-Security n\'est pas configuré' });
-    securityScore -= 10;
+    vulnerabilities.push({ severity: 'high', issue: 'HSTS manquant', impact: 'Vulnérable aux attaques downgrade HTTPS→HTTP' });
+    vulnerabilitiesList.push({ 
+      severity: 'Medium', 
+      title: 'HSTS manquant', 
+      description: 'Le header Strict-Transport-Security n\'est pas configuré. Le site est vulnérable aux attaques de rétrogradation.' 
+    });
+    securityScore -= 15;
+  } else if (securityHeaders.strictTransportSecurity && https) {
+    // Vérifier la durée du HSTS
+    const hstsValue = securityHeaders.strictTransportSecurity.toLowerCase();
+    const maxAge = hstsValue.match(/max-age=(\d+)/);
+    if (maxAge && parseInt(maxAge[1]) < 31536000) { // Moins d'un an
+      vulnerabilitiesList.push({ 
+        severity: 'Low', 
+        title: 'HSTS avec durée courte', 
+        description: 'Le HSTS est configuré mais avec une durée inférieure à 1 an (recommandé: 2 ans)' 
+      });
+      securityScore -= 3;
+    }
   }
+  
+  // 3. Content Security Policy (15 points)
   if (!securityHeaders.contentSecurityPolicy) {
-    vulnerabilities.push({ severity: 'medium', issue: 'CSP manquant', impact: 'Vulnérable aux attaques XSS' });
-    vulnerabilitiesList.push({ severity: 'Medium', title: 'CSP manquant', description: 'Pas de Content-Security-Policy configuré' });
+    vulnerabilities.push({ severity: 'high', issue: 'CSP manquant', impact: 'Vulnérable aux attaques XSS et injection de code' });
+    vulnerabilitiesList.push({ 
+      severity: 'Medium', 
+      title: 'Content Security Policy manquant', 
+      description: 'Aucune politique de sécurité du contenu n\'est définie. Le site est vulnérable aux attaques XSS.' 
+    });
+    securityScore -= 15;
+  } else {
+    // Vérifier la qualité du CSP
+    const cspValue = securityHeaders.contentSecurityPolicy.toLowerCase();
+    if (cspValue.includes('unsafe-inline') || cspValue.includes('unsafe-eval')) {
+      vulnerabilitiesList.push({ 
+        severity: 'Low', 
+        title: 'CSP avec directives non sécurisées', 
+        description: 'Le CSP utilise unsafe-inline ou unsafe-eval, ce qui réduit son efficacité' 
+      });
+      securityScore -= 5;
+    }
+  }
+  
+  // 4. X-Frame-Options / Clickjacking (10 points)
+  if (!securityHeaders.xFrameOptions || securityHeaders.xFrameOptions === 'Not Set') {
+    vulnerabilities.push({ severity: 'medium', issue: 'X-Frame-Options manquant', impact: 'Vulnérable au clickjacking' });
+    vulnerabilitiesList.push({ 
+      severity: 'Medium', 
+      title: 'X-Frame-Options manquant', 
+      description: 'Le site peut être intégré dans une iframe, exposant les utilisateurs au clickjacking' 
+    });
     securityScore -= 10;
   }
-  if (!securityHeaders.xFrameOptions || securityHeaders.xFrameOptions === 'Not Set') {
-    vulnerabilities.push({ severity: 'low', issue: 'X-Frame-Options manquant', impact: 'Vulnérable au clickjacking' });
-    vulnerabilitiesList.push({ severity: 'Low', title: 'X-Frame-Options manquant', description: 'Le site peut être intégré dans une iframe' });
+  
+  // 5. X-Content-Type-Options (5 points)
+  if (!securityHeaders.xContentTypeOptions) {
+    vulnerabilitiesList.push({ 
+      severity: 'Low', 
+      title: 'X-Content-Type-Options manquant', 
+      description: 'Le header X-Content-Type-Options: nosniff n\'est pas défini. Risque de MIME sniffing.' 
+    });
     securityScore -= 5;
   }
+  
+  // 6. Referrer-Policy (5 points)
+  if (!securityHeaders.referrerPolicy || securityHeaders.referrerPolicy === 'Not Set') {
+    vulnerabilitiesList.push({ 
+      severity: 'Low', 
+      title: 'Referrer-Policy non défini', 
+      description: 'Aucune politique de référent n\'est définie. Des informations sensibles peuvent fuiter via le header Referer.' 
+    });
+    securityScore -= 5;
+  }
+  
+  // 7. Permissions-Policy / Feature-Policy (5 points)
+  const permissionsPolicy = response.headers.get('permissions-policy') || response.headers.get('feature-policy');
+  if (!permissionsPolicy) {
+    vulnerabilitiesList.push({ 
+      severity: 'Low', 
+      title: 'Permissions-Policy manquant', 
+      description: 'Aucune politique de permissions n\'est définie pour contrôler l\'accès aux APIs du navigateur' 
+    });
+    securityScore -= 5;
+  }
+  
+  // 8. Contenu mixte (10 points)
+  if (mixedContent) {
+    vulnerabilities.push({ severity: 'high', issue: 'Contenu mixte détecté', impact: 'Ressources HTTP chargées sur une page HTTPS' });
+    vulnerabilitiesList.push({ 
+      severity: 'High', 
+      title: 'Contenu mixte (Mixed Content)', 
+      description: 'Le site HTTPS charge des ressources en HTTP, compromettant la sécurité de la connexion' 
+    });
+    securityScore -= 10;
+  }
+  
+  // 9. Subresource Integrity (5 points)
+  if (!hasSubresourceIntegrity && externalScripts > 0) {
+    vulnerabilitiesList.push({ 
+      severity: 'Low', 
+      title: 'Subresource Integrity non utilisé', 
+      description: `${externalScripts} script(s) externe(s) sans vérification d\'intégrité (SRI). Risque de compromission CDN.` 
+    });
+    securityScore -= 5;
+  }
+  
+  // 10. Cookies sécurisés (5 points)
+  if (cookieInfo && !hasSecureCookies) {
+    vulnerabilitiesList.push({ 
+      severity: 'Medium', 
+      title: 'Cookies non sécurisés', 
+      description: 'Les cookies ne sont pas configurés avec les flags Secure et HttpOnly' 
+    });
+    securityScore -= 5;
+  }
+  
+  // 11. Exposition du serveur (3 points)
+  if (securityHeaders.server && securityHeaders.server !== 'Unknown' && !securityHeaders.server.includes('cloudflare')) {
+    vulnerabilitiesList.push({ 
+      severity: 'Low', 
+      title: 'Version du serveur exposée', 
+      description: `Le header Server révèle des informations: ${securityHeaders.server}. Cela peut aider les attaquants.` 
+    });
+    securityScore -= 3;
+  }
+  
+  // 12. Formulaires non sécurisés (10 points)
+  const formsWithoutHttps = !https && $('form').length > 0;
+  if (formsWithoutHttps) {
+    vulnerabilities.push({ severity: 'critical', issue: 'Formulaires sans HTTPS', impact: 'Données de formulaire transmises en clair' });
+    vulnerabilitiesList.push({ 
+      severity: 'High', 
+      title: 'Formulaires non sécurisés', 
+      description: 'Des formulaires sont présents sur un site HTTP. Les données soumises ne sont pas chiffrées.' 
+    });
+    securityScore -= 10;
+  }
+  
+  // 13. Inputs de mot de passe sans HTTPS (15 points)
+  const passwordInputs = $('input[type="password"]').length;
+  if (passwordInputs > 0 && !https) {
+    vulnerabilities.push({ severity: 'critical', issue: 'Champs de mot de passe sans HTTPS', impact: 'Mots de passe transmis en clair' });
+    vulnerabilitiesList.push({ 
+      severity: 'High', 
+      title: 'Champs de mot de passe non sécurisés', 
+      description: 'Des champs de mot de passe sont présents sans HTTPS. Les mots de passe sont transmis en clair.' 
+    });
+    securityScore -= 15;
+  }
+  
+  // 14. Scripts inline (5 points)
+  const inlineScripts = $('script:not([src])').length;
+  if (inlineScripts > 10) {
+    vulnerabilitiesList.push({ 
+      severity: 'Low', 
+      title: 'Nombreux scripts inline', 
+      description: `${inlineScripts} scripts inline détectés. Cela rend le CSP difficile à implémenter et augmente les risques XSS.` 
+    });
+    securityScore -= 5;
+  }
+  
+  // 15. Détection de technologies vulnérables connues
+  const vulnerableTechs = [];
+  techStack.forEach(tech => {
+    // jQuery < 3.5.0 a des vulnérabilités XSS connues
+    if (tech.name === 'jQuery' && tech.version && parseFloat(tech.version) < 3.5) {
+      vulnerableTechs.push(`jQuery ${tech.version} (vulnérabilités XSS connues)`);
+    }
+  });
+  
+  if (vulnerableTechs.length > 0) {
+    vulnerabilitiesList.push({ 
+      severity: 'Medium', 
+      title: 'Technologies avec vulnérabilités connues', 
+      description: `Technologies potentiellement vulnérables détectées: ${vulnerableTechs.join(', ')}` 
+    });
+    securityScore -= 10;
+  }
+  
+  // 16. CORS mal configuré (détection basique)
+  const corsHeader = response.headers.get('access-control-allow-origin');
+  if (corsHeader === '*') {
+    vulnerabilitiesList.push({ 
+      severity: 'Low', 
+      title: 'CORS trop permissif', 
+      description: 'Le header Access-Control-Allow-Origin est configuré sur *, permettant à n\'importe quel site d\'accéder aux ressources' 
+    });
+    securityScore -= 3;
+  }
+  
+  // 17. Autocomplete sur champs sensibles
+  const sensitiveInputsWithAutocomplete = $('input[type="password"]:not([autocomplete="off"]), input[name*="card"]:not([autocomplete="off"]), input[name*="cvv"]:not([autocomplete="off"])').length;
+  if (sensitiveInputsWithAutocomplete > 0) {
+    vulnerabilitiesList.push({ 
+      severity: 'Low', 
+      title: 'Autocomplete activé sur champs sensibles', 
+      description: `${sensitiveInputsWithAutocomplete} champ(s) sensible(s) avec autocomplete activé` 
+    });
+    securityScore -= 3;
+  }
+
+  // S'assurer que le score reste entre 0 et 100
+  securityScore = Math.max(0, Math.min(100, securityScore));
+  
+  // Calculer le grade de sécurité
+  let securityGrade = 'F';
+  if (securityScore >= 90) securityGrade = 'A+';
+  else if (securityScore >= 85) securityGrade = 'A';
+  else if (securityScore >= 80) securityGrade = 'A-';
+  else if (securityScore >= 75) securityGrade = 'B+';
+  else if (securityScore >= 70) securityGrade = 'B';
+  else if (securityScore >= 65) securityGrade = 'B-';
+  else if (securityScore >= 60) securityGrade = 'C+';
+  else if (securityScore >= 55) securityGrade = 'C';
+  else if (securityScore >= 50) securityGrade = 'C-';
+  else if (securityScore >= 40) securityGrade = 'D';
+  else securityGrade = 'F';
 
   // === ANALYSE UX/SEO APPROFONDIE ===
   const title = $('title').text().trim();
@@ -1305,7 +1516,11 @@ async function analyzeWebsite(url) {
       mixedContent,
       hasSubresourceIntegrity,
       hasSecureCookies,
-      securityGrade: securityScore >= 90 ? 'A' : securityScore >= 80 ? 'B' : securityScore >= 70 ? 'C' : securityScore >= 60 ? 'D' : 'F'
+      securityGrade,
+      permissionsPolicy: !!permissionsPolicy,
+      inlineScripts,
+      passwordInputsSecure: passwordInputs === 0 || https,
+      formsSecure: $('form').length === 0 || https
     },
     ux: {
       title,
