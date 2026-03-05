@@ -12,6 +12,14 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Middleware to log API requests
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      console.log(`[API] ${req.method} ${req.path}`);
+    }
+    next();
+  });
+
   // API routes FIRST
   app.post("/api/analyze", async (req, res) => {
     try {
@@ -854,12 +862,19 @@ async function startServer() {
   } else {
     // Serve static files in production
     app.use(express.static("dist"));
+    
+    // Serve index.html for SPA routing (only in production, after static files)
+    app.get("*", (req, res) => {
+      res.sendFile(process.cwd() + "/dist/index.html");
+    });
   }
 
-  // Serve index.html for SPA routing
-  app.get("*", (req, res) => {
-    res.sendFile(process.cwd() + "/index.html");
-  });
+  // Serve index.html for SPA routing (development)
+  if (process.env.NODE_ENV !== "production") {
+    app.get("*", (req, res) => {
+      res.sendFile(process.cwd() + "/index.html");
+    });
+  }
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
