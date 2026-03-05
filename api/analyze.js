@@ -72,8 +72,16 @@ async function analyzeWebsite(url) {
     throw new Error('Failed to parse HTML content');
   }
 
-  // Déclarer https tôt pour l'utiliser dans la détection des technologies
+  // Déclarer https et securityHeaders tôt pour l'utiliser dans la détection des technologies
   const https = targetUrl.startsWith('https://');
+  const securityHeaders = {
+    strictTransportSecurity: response.headers.get('strict-transport-security'),
+    contentSecurityPolicy: response.headers.get('content-security-policy'),
+    xFrameOptions: response.headers.get('x-frame-options') || 'Not Set',
+    xContentTypeOptions: response.headers.get('x-content-type-options'),
+    referrerPolicy: response.headers.get('referrer-policy') || 'Not Set',
+    server: response.headers.get('server') || 'Unknown',
+  };
 
   // === ANALYSE EXHAUSTIVE DES TECHNOLOGIES ===
   const techStack = [];
@@ -378,15 +386,6 @@ async function analyzeWebsite(url) {
 
 
   // === ANALYSE DE SÉCURITÉ AVANCÉE ===
-  const securityHeaders = {
-    strictTransportSecurity: response.headers.get('strict-transport-security'),
-    contentSecurityPolicy: response.headers.get('content-security-policy'),
-    xFrameOptions: response.headers.get('x-frame-options') || 'Not Set',
-    xContentTypeOptions: response.headers.get('x-content-type-options'),
-    referrerPolicy: response.headers.get('referrer-policy') || 'Not Set',
-    server: response.headers.get('server') || 'Unknown',
-  };
-
   const vulnerabilities = [];
   const vulnerabilitiesList = [];
   let securityScore = https ? 80 : 30;
