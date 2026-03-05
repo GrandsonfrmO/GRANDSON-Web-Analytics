@@ -1,24 +1,41 @@
 // API de comparaison de deux sites web
-import analyzeModule from './analyze.js';
+// Importe directement la fonction d'analyse depuis analyze.js
+import analyzeHandler from './analyze.js';
 
-// Extraire la fonction analyzeWebsite du module
-const analyzeWebsite = analyzeModule.default ? 
-  (async (req, res) => {
-    // Appeler le handler par défaut et récupérer les données
+// Fonction helper pour simuler une requête/réponse et extraire les données
+async function getAnalysisData(url) {
+  return new Promise((resolve, reject) => {
+    const mockReq = {
+      method: 'POST',
+      body: { url }
+    };
+
     const mockRes = {
       statusCode: 200,
       headers: {},
-      setHeader: function(key, value) { this.headers[key] = value; },
-      status: function(code) { this.statusCode = code; return this; },
-      json: function(data) { this.data = data; return this; }
+      data: null,
+      setHeader(key, value) {
+        this.headers[key] = value;
+        return this;
+      },
+      status(code) {
+        this.statusCode = code;
+        return this;
+      },
+      json(data) {
+        this.data = data;
+        if (this.statusCode === 200) {
+          resolve(data);
+        } else {
+          reject(new Error(data.error || 'Analysis failed'));
+        }
+        return this;
+      }
     };
-    
-    await analyzeModule.default(req, mockRes);
-    if (mockRes.statusCode !== 200) {
-      throw new Error(mockRes.data?.error || 'Analysis failed');
-    }
-    return mockRes.data;
-  }) : null;
+
+    analyzeHandler(mockReq, mockRes).catch(reject);
+  });
+}
 
 export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
@@ -40,8 +57,8 @@ export default async function handler(req, res) {
 
     // Analyser les deux sites en parallèle
     const [result1, result2] = await Promise.all([
-      analyzeWebsite({ body: { url: url1 } }, {}),
-      analyzeWebsite({ body: { url: url2 } }, {})
+      getAnalysisData(url1),
+      getAnalysisData(url2)
     ]);
 
     // Calculer les différences et comparaisons
