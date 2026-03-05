@@ -567,46 +567,64 @@ async function analyzeWebsite(url) {
   let devScore = 0;
   const devIndicators = [];
 
-  // Critères techniques avancés (40 points max)
-  if (techStack.length >= 5) {
-    devScore += 15;
-    devIndicators.push('Stack technique riche');
-  } else if (techStack.length >= 3) {
-    devScore += 10;
-  } else if (techStack.length >= 1) {
-    devScore += 5;
-  }
-
-  // Frameworks modernes (15 points)
+  // 1. STACK TECHNIQUE (20 points max)
   const modernFrameworks = techStack.filter(t => 
     ['React', 'Vue.js', 'Angular', 'Next.js', 'Nuxt.js', 'Svelte'].includes(t.name)
   );
-  if (modernFrameworks.length > 0) {
+  
+  if (techStack.length >= 10 && modernFrameworks.length > 0) {
+    devScore += 20;
+    devIndicators.push('Stack technique très avancé');
+  } else if (techStack.length >= 7) {
     devScore += 15;
+    devIndicators.push('Stack technique riche');
+  } else if (techStack.length >= 5) {
+    devScore += 10;
+  } else if (techStack.length >= 3) {
+    devScore += 5;
+  }
+
+  // 2. FRAMEWORKS MODERNES (15 points)
+  if (modernFrameworks.length >= 2) {
+    devScore += 15;
+    devIndicators.push('Maîtrise de plusieurs frameworks modernes');
+  } else if (modernFrameworks.length === 1) {
+    devScore += 10;
     devIndicators.push('Framework JS moderne');
   }
 
-  // Qualité du code HTML (25 points max)
-  if (semanticElements >= 7) {
+  // 3. QUALITÉ DU CODE HTML (25 points max)
+  // Sémantique HTML5
+  if (semanticElements >= 10) {
     devScore += 15;
     devIndicators.push('Excellente sémantique HTML5');
+  } else if (semanticElements >= 7) {
+    devScore += 12;
   } else if (semanticElements >= 4) {
-    devScore += 10;
+    devScore += 8;
   } else if (semanticElements >= 2) {
-    devScore += 5;
+    devScore += 4;
   }
 
-  if (inlineStyles < 3) {
+  // Propreté du CSS
+  if (inlineStyles === 0) {
     devScore += 10;
+    devIndicators.push('Code CSS parfaitement organisé');
+  } else if (inlineStyles < 3) {
+    devScore += 8;
     devIndicators.push('Code CSS propre');
   } else if (inlineStyles < 10) {
-    devScore += 5;
+    devScore += 4;
   }
 
-  // Accessibilité (20 points max)
+  // 4. ACCESSIBILITÉ (20 points max) - Signe d'un dev professionnel
   const accessibilityScore = ariaLabels + roleAttributes + (formLabels > 0 ? 5 : 0);
-  if (accessibilityScore >= 10) {
+  
+  if (accessibilityScore >= 15 && imagesWithoutAlt === 0) {
     devScore += 20;
+    devIndicators.push('Accessibilité WCAG AA/AAA');
+  } else if (accessibilityScore >= 10) {
+    devScore += 15;
     devIndicators.push('Accessibilité excellente');
   } else if (accessibilityScore >= 5) {
     devScore += 10;
@@ -614,57 +632,116 @@ async function analyzeWebsite(url) {
     devScore += 5;
   }
 
-  // Sécurité (20 points max)
-  if (https && securityHeaders.contentSecurityPolicy && securityHeaders.strictTransportSecurity) {
-    devScore += 20;
-    devIndicators.push('Sécurité optimale');
-  } else if (https && (securityHeaders.contentSecurityPolicy || securityHeaders.strictTransportSecurity)) {
-    devScore += 15;
-  } else if (https) {
-    devScore += 10;
+  // 5. SÉCURITÉ (20 points max) - Signe d'un dev expérimenté
+  let securityPoints = 0;
+  if (https) securityPoints += 8;
+  if (securityHeaders.strictTransportSecurity) securityPoints += 4;
+  if (securityHeaders.contentSecurityPolicy) securityPoints += 4;
+  if (securityHeaders.xFrameOptions !== 'Not Set') securityPoints += 2;
+  if (!mixedContent && https) securityPoints += 2;
+  
+  devScore += securityPoints;
+  if (securityPoints >= 18) {
+    devIndicators.push('Sécurité de niveau production');
+  } else if (securityPoints >= 12) {
+    devIndicators.push('Bonne sécurité');
   }
 
-  // SEO & Performance (20 points max)
-  if (uxScore >= 90) {
-    devScore += 20;
-    devIndicators.push('SEO/UX excellent');
-  } else if (uxScore >= 75) {
-    devScore += 15;
-  } else if (uxScore >= 60) {
-    devScore += 10;
-  } else if (uxScore >= 40) {
-    devScore += 5;
+  // 6. SEO & PERFORMANCE (20 points max)
+  let seoPoints = 0;
+  if (uxScore >= 90) seoPoints += 10;
+  else if (uxScore >= 75) seoPoints += 7;
+  else if (uxScore >= 60) seoPoints += 5;
+  else if (uxScore >= 40) seoPoints += 2;
+  
+  if (structuredData > 0) seoPoints += 5;
+  if (hasCanonical && hasOpenGraph) seoPoints += 5;
+  
+  devScore += seoPoints;
+  if (seoPoints >= 15) {
+    devIndicators.push('SEO/UX expert');
   }
 
-  // Optimisations avancées (10 points)
-  if (lazyLoadImages > 0 && hasCanonical && hasOpenGraph) {
-    devScore += 10;
-    devIndicators.push('Optimisations avancées');
-  } else if (lazyLoadImages > 0 || hasCanonical || hasOpenGraph) {
-    devScore += 5;
+  // 7. OPTIMISATIONS AVANCÉES (15 points) - Signe d'expertise
+  let optimizationPoints = 0;
+  if (lazyLoadImages > imageCount * 0.5 && imageCount > 0) optimizationPoints += 5;
+  if (hasCompression) optimizationPoints += 3;
+  if (blockingScripts < 3) optimizationPoints += 3;
+  if (hasSubresourceIntegrity) optimizationPoints += 2;
+  if (hasMediaQueries) optimizationPoints += 2;
+  
+  devScore += optimizationPoints;
+  if (optimizationPoints >= 10) {
+    devIndicators.push('Optimisations de niveau expert');
+  } else if (optimizationPoints >= 5) {
+    devIndicators.push('Bonnes optimisations');
   }
 
-  // Architecture (10 points)
+  // 8. ARCHITECTURE & ORGANISATION (10 points)
   if (scriptCount >= 3 && scriptCount <= 15 && cssCount >= 1 && cssCount <= 5) {
     devScore += 10;
-    devIndicators.push('Architecture équilibrée');
+    devIndicators.push('Architecture bien organisée');
+  } else if (scriptCount > 0 && scriptCount <= 20 && cssCount > 0 && cssCount <= 8) {
+    devScore += 6;
   } else if (scriptCount > 0 && cssCount > 0) {
-    devScore += 5;
+    devScore += 3;
   }
 
-  // Pénalités
-  if (inlineStyles > 20) devScore -= 10;
-  if (imagesWithoutAlt > imageCount * 0.5 && imageCount > 0) devScore -= 10;
-  if (maxDepth > 15) devScore -= 5;
+  // 9. BONNES PRATIQUES AVANCÉES (bonus)
+  if (headingHierarchyValid && h1Count === 1) {
+    devScore += 5;
+    devIndicators.push('Hiérarchie de titres parfaite');
+  }
+  
+  if (hasResponsiveViewport && hasMediaQueries && touchIcons > 0) {
+    devScore += 5;
+    devIndicators.push('Mobile-first bien implémenté');
+  }
+
+  // PÉNALITÉS (signes de mauvaises pratiques)
+  if (inlineStyles > 30) {
+    devScore -= 15;
+    devIndicators.push('⚠ Trop de styles inline');
+  } else if (inlineStyles > 20) {
+    devScore -= 10;
+  }
+  
+  if (imagesWithoutAlt > imageCount * 0.5 && imageCount > 0) {
+    devScore -= 15;
+    devIndicators.push('⚠ Accessibilité des images négligée');
+  } else if (imagesWithoutAlt > imageCount * 0.3 && imageCount > 0) {
+    devScore -= 10;
+  }
+  
+  if (maxDepth > 20) {
+    devScore -= 10;
+    devIndicators.push('⚠ DOM trop profond');
+  } else if (maxDepth > 15) {
+    devScore -= 5;
+  }
+  
+  if (scriptCount > 30) {
+    devScore -= 10;
+    devIndicators.push('⚠ Trop de scripts');
+  }
+  
+  if (!https) {
+    devScore -= 20;
+    devIndicators.push('⚠ Pas de HTTPS (critique)');
+  }
 
   devScore = Math.max(0, Math.min(100, devScore));
 
-  // Détermination du niveau avec seuils réalistes
-  if (devScore >= 80) {
+  // DÉTERMINATION DU NIVEAU (seuils ajustés)
+  if (devScore >= 85) {
+    devLevel = 'Expert Senior';
+    devIndicators.push('🏆 Niveau professionnel confirmé');
+  } else if (devScore >= 70) {
     devLevel = 'Expert';
-  } else if (devScore >= 60) {
+    devIndicators.push('✨ Très bon niveau technique');
+  } else if (devScore >= 55) {
     devLevel = 'Avancé';
-  } else if (devScore >= 40) {
+  } else if (devScore >= 35) {
     devLevel = 'Intermédiaire';
   } else if (devScore >= 20) {
     devLevel = 'Junior';
@@ -672,82 +749,250 @@ async function analyzeWebsite(url) {
     devLevel = 'Débutant';
   }
 
-  // === DÉTECTION PROBABILITÉ IA ===
+  // === DÉTECTION AVANCÉE PROBABILITÉ IA (par une IA qui connaît ses patterns) ===
   let aiProbability = 0;
   const aiIndicators = [];
+  const aiSignals = {
+    placeholder: 0,
+    structure: 0,
+    naming: 0,
+    content: 0,
+    code: 0
+  };
 
-  // Patterns typiques de sites générés par IA
-  const genericPhrases = [
-    'lorem ipsum', 'placeholder', 'example', 'sample text', 'demo content',
-    'your company', 'your business', 'insert text here', 'add content'
+  // 1. DÉTECTION DE CONTENU PLACEHOLDER/GÉNÉRIQUE (très fort indicateur)
+  const aiPlaceholders = [
+    'lorem ipsum', 'dolor sit amet', 'consectetur adipiscing',
+    'placeholder', 'sample text', 'demo content', 'example text',
+    'your company name', 'your business', 'company name here',
+    'insert text here', 'add content here', 'your content here',
+    'click here', 'learn more', 'read more', 'get started',
+    'welcome to our website', 'this is a sample',
+    '[your', '[company', '[insert', '[add'
   ];
   
-  let genericCount = 0;
-  genericPhrases.forEach(phrase => {
-    if (htmlLower.includes(phrase)) {
-      genericCount++;
-      aiProbability += 10;
+  let placeholderCount = 0;
+  aiPlaceholders.forEach(phrase => {
+    const regex = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    const matches = (textContent.match(regex) || []).length;
+    if (matches > 0) {
+      placeholderCount += matches;
+      aiSignals.placeholder += matches * 5;
     }
   });
   
-  if (genericCount > 0) {
-    aiIndicators.push(`${genericCount} texte(s) générique(s) détecté(s)`);
+  if (placeholderCount > 0) {
+    aiIndicators.push(`${placeholderCount} placeholder(s) IA détecté(s)`);
   }
 
-  // Structure trop parfaite/répétitive (signe d'IA)
+  // 2. PATTERNS DE STRUCTURE IA (grilles parfaites, sections identiques)
   const sections = $('section').length;
   const articles = $('article').length;
-  if (sections > 5 && sections === articles) {
-    aiProbability += 15;
-    aiIndicators.push('Structure très répétitive');
+  const divs = $('div[class*="grid"], div[class*="flex"]').length;
+  
+  // Structure trop symétrique (IA aime la perfection)
+  if (sections > 4 && sections === articles) {
+    aiSignals.structure += 15;
+    aiIndicators.push('Structure parfaitement symétrique (pattern IA)');
+  }
+  
+  // Grilles répétitives (3, 4, 6 colonnes = patterns IA classiques)
+  const gridPatterns = $('[class*="grid-cols-3"], [class*="grid-cols-4"], [class*="grid-cols-6"]').length;
+  if (gridPatterns > 3) {
+    aiSignals.structure += 10;
+    aiIndicators.push('Grilles répétitives (layout IA)');
   }
 
-  // Utilisation de builders IA connus
-  const aiBuilders = ['framer', 'dora', 'webflow', 'wix adi', 'bookmark'];
+  // 3. NOMMAGE GÉNÉRIQUE (IA utilise des noms prévisibles)
+  const aiNamingPatterns = [
+    'section-1', 'section-2', 'section-3',
+    'container-1', 'container-2',
+    'card-1', 'card-2', 'card-3',
+    'feature-1', 'feature-2', 'feature-3',
+    'item-1', 'item-2', 'item-3',
+    'component', 'wrapper', 'block'
+  ];
+  
+  let genericNaming = 0;
+  aiNamingPatterns.forEach(pattern => {
+    if (html.includes(`id="${pattern}"`) || html.includes(`class="${pattern}"`)) {
+      genericNaming++;
+      aiSignals.naming += 3;
+    }
+  });
+  
+  if (genericNaming > 5) {
+    aiIndicators.push(`${genericNaming} noms génériques (pattern IA)`);
+  }
+
+  // 4. CONTENU RÉPÉTITIF (IA répète souvent les mêmes phrases)
+  const paragraphTexts = [];
+  $('p').each((i, el) => {
+    const text = $(el).text().trim();
+    if (text.length > 20) paragraphTexts.push(text);
+  });
+  
+  const uniqueTexts = new Set(paragraphTexts);
+  if (paragraphTexts.length > 5 && uniqueTexts.size < paragraphTexts.length * 0.7) {
+    aiSignals.content += 20;
+    aiIndicators.push('Contenu très répétitif (génération IA)');
+  }
+
+  // 5. LONGUEUR DE TEXTE UNIFORME (IA génère souvent des textes de longueur similaire)
+  const textLengths = [];
+  $('p').each((i, el) => {
+    const len = $(el).text().trim().length;
+    if (len > 20) textLengths.push(len);
+  });
+  
+  if (textLengths.length > 5) {
+    const avgLength = textLengths.reduce((a, b) => a + b, 0) / textLengths.length;
+    const variance = textLengths.reduce((sum, len) => sum + Math.pow(len - avgLength, 2), 0) / textLengths.length;
+    const stdDev = Math.sqrt(variance);
+    
+    // Faible variance = textes trop uniformes = IA
+    if (stdDev < avgLength * 0.3) {
+      aiSignals.content += 15;
+      aiIndicators.push('Longueur de texte trop uniforme (IA)');
+    }
+  }
+
+  // 6. BUILDERS IA ET NO-CODE (détection stricte)
+  const aiBuilders = [
+    { name: 'Framer', pattern: 'framer.com' },
+    { name: 'Webflow', pattern: 'webflow.io' },
+    { name: 'Wix ADI', pattern: 'wix.com/website/builder' },
+    { name: 'Dora AI', pattern: 'dora.run' },
+    { name: 'Bookmark AiDA', pattern: 'bookmark.com' },
+    { name: '10Web', pattern: '10web.io' },
+    { name: 'Hostinger AI', pattern: 'hostinger' }
+  ];
+  
   aiBuilders.forEach(builder => {
-    if (htmlLower.includes(builder)) {
-      aiProbability += 20;
-      aiIndicators.push(`Builder IA détecté: ${builder}`);
+    if (html.includes(builder.pattern)) {
+      aiSignals.code += 25;
+      aiIndicators.push(`Builder IA: ${builder.name}`);
     }
   });
 
-  // Classes CSS génériques/automatiques
-  const autoGeneratedClasses = $('[class*="auto-"], [class*="generated-"], [class*="ai-"]').length;
-  if (autoGeneratedClasses > 10) {
-    aiProbability += 15;
-    aiIndicators.push('Classes CSS auto-générées');
+  // 7. COMMENTAIRES IA (très révélateur)
+  const aiComments = [
+    'Generated by', 'Created with AI', 'Auto-generated',
+    'AI-powered', 'Built with AI', 'ChatGPT', 'Claude',
+    'Copilot', 'Generated with', 'Automatically created'
+  ];
+  
+  aiComments.forEach(comment => {
+    if (html.includes(comment)) {
+      aiSignals.code += 30;
+      aiIndicators.push(`Commentaire IA: "${comment}"`);
+    }
+  });
+
+  // 8. CLASSES CSS AUTO-GÉNÉRÉES (pattern IA)
+  const autoClasses = $('[class*="auto-"], [class*="generated-"], [class*="ai-"], [class*="component-"]').length;
+  if (autoClasses > 10) {
+    aiSignals.code += 15;
+    aiIndicators.push(`${autoClasses} classes auto-générées`);
   }
 
-  // Commentaires IA typiques
-  if (html.includes('Generated by') || html.includes('Created with AI') || html.includes('Auto-generated')) {
-    aiProbability += 25;
-    aiIndicators.push('Commentaires IA détectés');
-  }
-
-  // Images stock/placeholder
-  const stockImagePatterns = ['placeholder', 'unsplash', 'pexels', 'pixabay', 'lorem.space'];
-  let stockImageCount = 0;
+  // 9. IMAGES STOCK (IA utilise souvent des placeholders)
+  const aiImageSources = [
+    'placeholder.com', 'via.placeholder', 'placehold',
+    'unsplash.com', 'pexels.com', 'pixabay.com',
+    'picsum.photos', 'lorempixel', 'dummyimage',
+    'placeholder.svg', 'image-placeholder'
+  ];
+  
+  let aiImageCount = 0;
   $('img').each((i, el) => {
     const src = $(el).attr('src') || '';
-    stockImagePatterns.forEach(pattern => {
-      if (src.toLowerCase().includes(pattern)) {
-        stockImageCount++;
+    const alt = $(el).attr('alt') || '';
+    aiImageSources.forEach(source => {
+      if (src.toLowerCase().includes(source)) {
+        aiImageCount++;
       }
     });
+    // Alt text générique (IA pattern)
+    if (alt.toLowerCase().includes('image') || alt.toLowerCase().includes('photo') || alt.toLowerCase().includes('picture')) {
+      aiImageCount += 0.5;
+    }
   });
   
-  if (stockImageCount > imageCount * 0.7 && imageCount > 0) {
-    aiProbability += 20;
-    aiIndicators.push('Majorité d\'images stock');
-  } else if (stockImageCount > imageCount * 0.4 && imageCount > 0) {
-    aiProbability += 10;
+  if (aiImageCount > imageCount * 0.5 && imageCount > 0) {
+    aiSignals.content += 20;
+    aiIndicators.push('Majorité d\'images placeholder/stock');
   }
 
-  // Texte trop court ou trop générique
-  if (textLength < 500 && domElements > 50) {
-    aiProbability += 10;
-    aiIndicators.push('Peu de contenu réel');
+  // 10. MÉTADONNÉES GÉNÉRIQUES (IA oublie souvent de personnaliser)
+  const titleLower = $('title').text().toLowerCase();
+  const metaDescAI = $('meta[name="description"]').attr('content') || '';
+  
+  const genericTitles = ['untitled', 'new site', 'website', 'home page', 'my site', 'welcome'];
+  const genericDescs = ['description', 'site description', 'website description'];
+  
+  if (genericTitles.some(t => titleLower.includes(t))) {
+    aiSignals.content += 15;
+    aiIndicators.push('Titre générique non personnalisé');
   }
+  
+  if (genericDescs.some(d => metaDescAI.toLowerCase().includes(d)) || metaDescAI.length < 20) {
+    aiSignals.content += 10;
+    aiIndicators.push('Meta description générique');
+  }
+
+  // 11. RATIO CODE/CONTENU (IA génère souvent beaucoup de markup pour peu de contenu)
+  if (textLength < 500 && domElements > 100) {
+    aiSignals.content += 15;
+    aiIndicators.push('Beaucoup de code pour peu de contenu (IA)');
+  }
+
+  // 12. INLINE STYLES EXCESSIFS (certains builders IA)
+  if (inlineStyles > 50) {
+    aiSignals.code += 10;
+    aiIndicators.push('Styles inline excessifs (builder IA)');
+  }
+
+  // CALCUL FINAL DE LA PROBABILITÉ IA
+  aiProbability = Math.min(100, 
+    aiSignals.placeholder + 
+    aiSignals.structure + 
+    aiSignals.naming + 
+    aiSignals.content + 
+    aiSignals.code
+  );
+
+  // RÉDUCTIONS pour signes de développement humain
+  if (devScore >= 80) {
+    aiProbability = Math.max(0, aiProbability - 30);
+    aiIndicators.push('✓ Code de qualité expert (humain)');
+  } else if (devScore >= 60) {
+    aiProbability = Math.max(0, aiProbability - 20);
+  }
+  
+  if (techStack.length >= 8 && modernFrameworks.length > 0) {
+    aiProbability = Math.max(0, aiProbability - 15);
+    aiIndicators.push('✓ Stack technique avancé (humain)');
+  }
+
+  if (hasAuth || hasEcommerce) {
+    aiProbability = Math.max(0, aiProbability - 25);
+    aiIndicators.push('✓ Fonctionnalités complexes (humain)');
+  }
+
+  // Contenu unique et varié
+  if (uniqueTexts.size === paragraphTexts.length && paragraphTexts.length > 5) {
+    aiProbability = Math.max(0, aiProbability - 15);
+    aiIndicators.push('✓ Contenu unique et varié (humain)');
+  }
+
+  // Personnalisation avancée
+  if (title.length > 10 && !genericTitles.some(t => title.toLowerCase().includes(t)) && metaDescription.length > 100) {
+    aiProbability = Math.max(0, aiProbability - 10);
+    aiIndicators.push('✓ Métadonnées personnalisées (humain)');
+  }
+
+  aiProbability = Math.min(100, Math.max(0, Math.round(aiProbability)));
 
   // Métadonnées génériques
   if (title.toLowerCase().includes('untitled') || title.toLowerCase().includes('new site') || 
