@@ -2,11 +2,5 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "other",
-  "devCommand": "npm run dev",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/dist/index.html"
-    }
-  ]
+  "devCommand": "npm run dev"
 }
