@@ -1,8 +1,6 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+const capturedErrors = [];
 
-const capturedErrors: any[] = [];
-
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method === 'POST') {

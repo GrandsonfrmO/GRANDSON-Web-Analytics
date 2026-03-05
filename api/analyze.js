@@ -1,12 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-
 const MAX_HTML_SIZE = 5 * 1024 * 1024;
 const FETCH_TIMEOUT = 15000;
-const analysisCache = new Map<string, { data: any; timestamp: number }>();
+const analysisCache = new Map();
 const CACHE_TTL = 1000 * 60 * 60;
 const MAX_CACHE_SIZE = 100;
 
-async function analyzeWebsite(url: string) {
+async function analyzeWebsite(url) {
   let targetUrl = url.trim();
   if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
     targetUrl = 'https://' + targetUrl;
@@ -18,7 +16,8 @@ async function analyzeWebsite(url: string) {
     throw new Error('Invalid URL format');
   }
 
-  if (new URL(targetUrl).hostname === 'localhost' || new URL(targetUrl).hostname === '127.0.0.1') {
+  const hostname = new URL(targetUrl).hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
     throw new Error('Localhost scanning is not allowed');
   }
 
@@ -65,10 +64,9 @@ async function analyzeWebsite(url: string) {
   const loadTime = Date.now() - startTime;
   const htmlSizeKB = Math.round(html.length / 1024);
 
-  // Simple analysis without cheerio for now
-  const techStack: any[] = [];
-  const features: string[] = [];
-  const recommendations: string[] = [];
+  const techStack = [];
+  const features = [];
+  const recommendations = [];
 
   const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
   const title = titleMatch ? titleMatch[1].trim() : 'Missing';
@@ -131,7 +129,7 @@ async function analyzeWebsite(url: string) {
   };
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method !== 'POST') {
@@ -167,7 +165,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     analysisCache.set(targetUrl, { data: responseData, timestamp: Date.now() });
 
     return res.status(200).json(responseData);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Analysis error:', error);
     return res.status(400).json({ error: error.message || 'Failed to analyze website' });
   }
