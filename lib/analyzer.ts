@@ -41,7 +41,8 @@ export async function analyzeWebsite(url: string) {
 
   // Validate HTTP status
   if (!response.ok) {
-    throw new Error(`Website returned status ${response.status}`);
+    const errorText = await response.text().catch(() => 'Unknown error');
+    throw new Error(`Website returned status ${response.status}: ${errorText.substring(0, 100)}`);
   }
 
   // Check content-type
@@ -51,7 +52,13 @@ export async function analyzeWebsite(url: string) {
   }
 
   // Get HTML with size limit
-  const html = await response.text();
+  let html;
+  try {
+    html = await response.text();
+  } catch (e) {
+    throw new Error("Failed to read response body");
+  }
+  
   if (html.length > MAX_HTML_SIZE) {
     throw new Error(`HTML size exceeds limit (${Math.round(html.length / 1024 / 1024)}MB > 5MB)`);
   }

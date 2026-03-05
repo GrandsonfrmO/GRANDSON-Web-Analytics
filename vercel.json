@@ -3,16 +3,7 @@
   "outputDirectory": "dist",
   "framework": "other",
   "devCommand": "npm run dev",
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1.ts"
-    },
     {
       "source": "/(.*)",
       "destination": "/dist/index.html"

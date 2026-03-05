@@ -7,6 +7,9 @@ const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 const MAX_CACHE_SIZE = 100;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Set CORS headers
+  res.setHeader('Content-Type', 'application/json');
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -30,11 +33,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Check cache
     const cached = analysisCache.get(targetUrl);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      return res.json({ ...cached.data, cached: true });
+      return res.status(200).json({ ...cached.data, cached: true });
     }
 
     // Analyze website
-    const responseData = await analyzeWebsite(url);
+    const responseData = await analyzeWebsite(targetUrl);
 
     // Save to cache with size limit
     if (analysisCache.size >= MAX_CACHE_SIZE) {
@@ -43,10 +46,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     analysisCache.set(targetUrl, { data: responseData, timestamp: Date.now() });
 
-    res.json(responseData);
+    return res.status(200).json(responseData);
 
   } catch (error: any) {
     console.error("Analysis error:", error);
-    res.status(400).json({ error: error.message || "Failed to analyze website" });
+    return res.status(400).json({ error: error.message || "Failed to analyze website" });
   }
 }
