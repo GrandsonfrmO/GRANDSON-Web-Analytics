@@ -4,7 +4,7 @@ import {
   Code2, AlertTriangle, CheckCircle2, Bot, Lightbulb, 
   ChevronRight, Activity, Zap, Layers, BarChart2,
   Box, Server, Palette, FileCode, Cpu, LayoutTemplate, Info, History, Clock,
-  Type, Image as ImageIcon, Link as LinkIcon, Bug, Award, TrendingUp, Gauge, GitCompare
+  Type, Image as ImageIcon, Link as LinkIcon, Bug, Award, TrendingUp, Gauge, GitCompare, ChevronDown
 } from 'lucide-react';
 import { cn } from './utils';
 import { motion } from 'motion/react';
@@ -129,6 +129,7 @@ export default function App() {
   const [history, setHistory] = useState<AnalysisResult[]>([]);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
 
   const [clientErrors, setClientErrors] = useState<any[]>([]);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
@@ -441,6 +442,98 @@ export default function App() {
               </motion.div>
             )}
           </form>
+
+          {/* Avertissement Important - Dropdown */}
+          {!result && !loading && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mt-8 max-w-3xl mx-auto"
+            >
+              <button
+                onClick={() => setShowWarning(!showWarning)}
+                className="w-full flex items-center justify-between p-4 bg-amber-50/80 hover:bg-amber-50 border-2 border-amber-200/60 rounded-2xl transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-100 rounded-xl">
+                    <Info className="w-5 h-5 text-amber-700" />
+                  </div>
+                  <span className="font-bold text-amber-900 text-left">
+                    Avertissement important sur les résultats de l'audit
+                  </span>
+                </div>
+                <ChevronDown className={cn(
+                  "w-5 h-5 text-amber-700 transition-transform duration-300",
+                  showWarning && "rotate-180"
+                )} />
+              </button>
+
+              {showWarning && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="mt-2 p-6 bg-white border-2 border-amber-200/60 rounded-2xl shadow-sm"
+                >
+                  <div className="space-y-4 text-slate-700">
+                    <p className="text-sm leading-relaxed">
+                      Cet audit utilise des <span className="font-bold text-slate-900">technologies d'analyse automatisées</span> (basées sur des algorithmes mathématiques pour évaluer performance, SEO, accessibilité et vulnérabilités) pour détecter des problèmes courants sur votre site web.
+                    </p>
+
+                    <div className="pt-4 border-t border-amber-100">
+                      <h4 className="font-bold text-amber-900 mb-3 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" />
+                        Pourquoi cet avertissement est essentiel :
+                      </h4>
+                      <ul className="space-y-3 text-sm">
+                        <li className="flex items-start gap-2">
+                          <span className="text-amber-600 font-bold mt-0.5">•</span>
+                          <span><span className="font-bold text-slate-900">Risque de faux positifs/négatifs :</span> Les outils mathématiques (heuristiques, scores pondérés) peuvent alerter sur des "bugs" inexistants (ex. : faux SEO penalty) ou rater des vulnérabilités critiques (ex. : injection SQL cachée), avec une précision typique de 70-90% selon les benchmarks (Lighthouse, PageSpeed Insights).</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-amber-600 font-bold mt-0.5">•</span>
+                          <span><span className="font-bold text-slate-900">Conséquences business :</span> Ignorer un faux négatif expose à des attaques (perte de données, downtime), tandis qu'un faux positif gaspille du temps/dev (coûts inutiles).</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-amber-600 font-bold mt-0.5">•</span>
+                          <span><span className="font-bold text-slate-900">Limites légales :</span> En cas d'incident (RGPD, breaches), un audit auto ne tient pas lieu de preuve ; une validation humaine est requise pour la conformité.</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-amber-600 font-bold mt-0.5">•</span>
+                          <span><span className="font-bold text-slate-900">Exemple concret :</span> Un score SEO "parfait" peut masquer un problème de Core Web Vitals impactant 40% du trafic mobile.</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="pt-4 border-t border-amber-100">
+                      <h4 className="font-bold text-emerald-900 mb-3 flex items-center gap-2">
+                        <Lightbulb className="w-4 h-4 text-emerald-600" />
+                        Recommandations :
+                      </h4>
+                      <ul className="space-y-2 text-sm">
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-600 font-bold mt-0.5">•</span>
+                          <span>Ces résultats sont un <span className="font-bold text-slate-900">guide initial</span> (pas 100% fiables).</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-emerald-600 font-bold mt-0.5">•</span>
+                          <span>Ne basez pas de <span className="font-bold text-slate-900">décisions critiques</span> (budget, refonte) uniquement dessus.</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="mt-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200">
+                      <p className="text-sm font-bold text-amber-900 text-center">
+                        Prenez-les comme un signal d'alarme intelligent, pas comme une vérité absolue !
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
         </div>
 
         {/* Loading State */}
