@@ -129,7 +129,7 @@ async function analyzeWebsite(url) {
   };
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method !== 'POST') {
@@ -169,4 +169,4 @@ module.exports = async function handler(req, res) {
     console.error('Analysis error:', error);
     return res.status(400).json({ error: error.message || 'Failed to analyze website' });
   }
-};
+}

@@ -2,6 +2,7 @@
   "name": "web-analyzer-pro",
   "description": "Analyse complète de sites web : technologies, sécurité, UX/SEO, performance et estimation de prix",
   "version": "1.0.0",
+  "type": "module",
   "private": false,
   "license": "MIT",
   "author": "Your Name",
