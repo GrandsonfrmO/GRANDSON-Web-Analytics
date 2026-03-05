@@ -456,11 +456,11 @@ async function analyzeWebsite(url) {
   const externalLinks = $('a[href^="http"]').length;
   const internalLinks = linkCount - externalLinks;
 
-  // Ratio texte/HTML
+  // Ratio texte/HTML (limité entre 0 et 100)
   const textContent = $('body').text().replace(/\s+/g, ' ').trim();
   const textLength = textContent.length;
   const htmlLength = html.length;
-  const textToHtmlRatio = Math.round((textLength / htmlLength) * 100);
+  const textToHtmlRatio = htmlLength > 0 ? Math.min(100, Math.round((textLength / htmlLength) * 100)) : 0;
 
   // GDPR
   const gdprCompliant = htmlLower.includes('cookie') && (htmlLower.includes('consent') || htmlLower.includes('accepter'));
@@ -469,24 +469,39 @@ async function analyzeWebsite(url) {
   const formLabels = $('label').length;
   const formInputs = $('input, textarea, select').length;
 
-  // Lisibilité (basé sur la longueur des paragraphes)
-  let readabilityScore = 70;
+  // Lisibilité (basé sur la longueur des paragraphes et le contenu)
+  let readabilityScore = 50; // Score de base moyen
   const paragraphs = $('p');
   let totalWords = 0;
   paragraphs.each((i, el) => {
     const text = $(el).text();
-    totalWords += text.split(/\s+/).length;
+    totalWords += text.split(/\s+/).filter(word => word.length > 0).length;
   });
   const avgWordsPerParagraph = paragraphs.length > 0 ? totalWords / paragraphs.length : 0;
-  if (avgWordsPerParagraph > 50 && avgWordsPerParagraph < 150) readabilityScore = 90;
-  else if (avgWordsPerParagraph > 150) readabilityScore = 60;
+  
+  if (paragraphs.length === 0) {
+    readabilityScore = 30; // Pas de paragraphes
+  } else if (avgWordsPerParagraph >= 20 && avgWordsPerParagraph <= 100) {
+    readabilityScore = 90; // Longueur optimale
+  } else if (avgWordsPerParagraph > 100 && avgWordsPerParagraph <= 200) {
+    readabilityScore = 70; // Un peu long mais acceptable
+  } else if (avgWordsPerParagraph > 200) {
+    readabilityScore = 50; // Trop long
+  } else if (avgWordsPerParagraph > 0 && avgWordsPerParagraph < 20) {
+    readabilityScore = 60; // Trop court
+  }
 
-  // Clarté de navigation
+  // Clarté de navigation (score entre 0 et 100)
   const navElements = $('nav').length;
   const menuItems = $('nav a, nav li').length;
-  let navigationClarity = 50;
-  if (navElements >= 1 && menuItems >= 3 && menuItems <= 10) navigationClarity = 90;
-  else if (navElements >= 1) navigationClarity = 70;
+  let navigationClarity = 30; // Score de base faible
+  if (navElements >= 1 && menuItems >= 3 && menuItems <= 15) {
+    navigationClarity = 90; // Navigation optimale
+  } else if (navElements >= 1 && menuItems > 0) {
+    navigationClarity = 70; // Navigation présente mais non optimale
+  } else if (navElements >= 1) {
+    navigationClarity = 50; // Navigation vide
+  }
 
   let uxScore = 100;
   const uxIssues = [];
@@ -761,9 +776,10 @@ async function analyzeWebsite(url) {
   // === ESTIMATION DE PRIX RÉALISTE ===
   let complexityScore = 0;
   
-  complexityScore += Math.min(30, domElements / 100);
-  complexityScore += Math.min(20, scriptCount * 2);
-  complexityScore += techStack.length * 5;
+  // Calcul basé sur la complexité réelle du site
+  complexityScore += Math.min(30, Math.floor(domElements / 100)); // Max 30 points pour DOM
+  complexityScore += Math.min(20, scriptCount * 2); // Max 20 points pour scripts
+  complexityScore += Math.min(25, techStack.length * 5); // Max 25 points pour stack
   complexityScore += linkCount > 50 ? 15 : linkCount > 20 ? 10 : 5;
   complexityScore += imageCount > 30 ? 15 : imageCount > 10 ? 10 : 5;
   
@@ -773,7 +789,11 @@ async function analyzeWebsite(url) {
   if (hasAuth) complexityScore += 20;
   if (hasForm) complexityScore += 10;
 
-  const estimatedDays = Math.ceil(complexityScore / 10);
+  // Limiter le score de complexité à un maximum raisonnable
+  complexityScore = Math.min(150, complexityScore);
+
+  // Estimation réaliste des jours (minimum 3 jours, maximum 60 jours)
+  const estimatedDays = Math.max(3, Math.min(60, Math.ceil(complexityScore / 10)));
   const freelancePriceEUR = estimatedDays * 400;
   const agencyPriceEUR = estimatedDays * 800;
   
@@ -782,10 +802,10 @@ async function analyzeWebsite(url) {
   const agencyPriceGNF = Math.round(agencyPriceEUR * EUR_TO_GNF);
 
   const pricingFactors = [];
-  if (hasEcommerce) pricingFactors.push('E-commerce (+30%)');
-  if (hasAuth) pricingFactors.push('Authentification (+20%)');
-  if (techStack.length >= 5) pricingFactors.push('Stack technique avancé (+15%)');
-  if (domElements > 1000) pricingFactors.push('Site complexe (+20%)');
+  if (hasEcommerce) pricingFactors.push('E-commerce (+30 pts)');
+  if (hasAuth) pricingFactors.push('Authentification (+20 pts)');
+  if (techStack.length >= 5) pricingFactors.push('Stack technique avancé (+25 pts)');
+  if (domElements > 1000) pricingFactors.push('Site complexe (+30 pts)');
 
   // === FEATURES DÉTECTÉES ===
   const features = [];
@@ -884,15 +904,17 @@ async function analyzeWebsite(url) {
         semanticElements,
         formLabels,
         formInputs,
-        score: Math.round((ariaLabels + roleAttributes + semanticElements) / 3 * 10)
+        score: Math.min(100, Math.round(((ariaLabels * 2) + (roleAttributes * 2) + (semanticElements * 3)) / 2))
       },
       mobileFriendliness: hasViewport ? 100 : 0,
       readabilityScore,
       navigationClarity
     },
-    designType: techStack.some(t => t.name.includes('WordPress')) ? 'CMS' : 
-                techStack.some(t => t.name.includes('Wix') || t.name.includes('Squarespace')) ? 'Website Builder' :
-                techStack.length >= 3 ? 'Custom' : 'Simple',
+    designType: techStack.some(t => t.name === 'WordPress') ? 'CMS' : 
+                techStack.some(t => ['Wix', 'Squarespace', 'Webflow'].includes(t.name)) ? 'Website Builder' :
+                techStack.some(t => ['Shopify', 'WooCommerce', 'Magento', 'PrestaShop'].includes(t.name)) ? 'E-commerce' :
+                techStack.some(t => ['React', 'Vue.js', 'Angular', 'Next.js', 'Nuxt.js', 'Svelte'].includes(t.name)) ? 'Application Web' :
+                techStack.length >= 5 ? 'Custom' : 'Simple',
     aiProbability,
     aiIndicators,
     developerLevel: devLevel,
