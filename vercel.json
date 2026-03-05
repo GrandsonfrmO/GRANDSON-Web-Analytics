@@ -3,6 +3,11 @@
   "outputDirectory": "dist",
   "framework": "other",
   "devCommand": "npm run dev",
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
