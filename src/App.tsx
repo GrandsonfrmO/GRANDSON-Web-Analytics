@@ -92,7 +92,7 @@ interface AnalysisResult {
   designType: string;
   aiProbability: number;
   developerLevel: string;
-  recommendations: string[];
+  recommendations: Array<{ priority: string; text: string; impact: string }> | string[];
   overallScore: number;
   pricing: {
     freelance: number;
@@ -1027,14 +1027,38 @@ export default function App() {
                   <ResultsGrid
                     items={result.recommendations}
                     itemsPerPage={6}
-                    renderItem={(rec, idx) => (
-                      <div className="flex items-start gap-3 bg-amber-50/30 p-5 rounded-3xl border border-amber-100/50 transition-all hover:bg-amber-50/80 hover:shadow-sm group h-full">
-                        <div className="bg-amber-100/50 p-1.5 rounded-full shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
-                          <ChevronRight className="w-4 h-4 text-amber-600" />
+                    renderItem={(rec, idx) => {
+                      const isObject = typeof rec === 'object' && rec !== null;
+                      const priority = isObject ? rec.priority : 'medium';
+                      const text = isObject ? rec.text : rec;
+                      const impact = isObject ? rec.impact : '';
+                      
+                      const priorityColors = {
+                        critical: 'bg-red-50/30 border-red-100/50 hover:bg-red-50/80',
+                        high: 'bg-orange-50/30 border-orange-100/50 hover:bg-orange-50/80',
+                        medium: 'bg-amber-50/30 border-amber-100/50 hover:bg-amber-50/80',
+                        low: 'bg-blue-50/30 border-blue-100/50 hover:bg-blue-50/80'
+                      };
+                      
+                      const priorityIconColors = {
+                        critical: 'bg-red-100/50 text-red-600',
+                        high: 'bg-orange-100/50 text-orange-600',
+                        medium: 'bg-amber-100/50 text-amber-600',
+                        low: 'bg-blue-100/50 text-blue-600'
+                      };
+                      
+                      return (
+                        <div className={`flex items-start gap-3 p-5 rounded-3xl border transition-all hover:shadow-sm group h-full ${priorityColors[priority] || priorityColors.medium}`}>
+                          <div className={`p-1.5 rounded-full shrink-0 mt-0.5 group-hover:scale-110 transition-transform ${priorityIconColors[priority] || priorityIconColors.medium}`}>
+                            <ChevronRight className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1">
+                            <span className="text-sm text-slate-700 font-medium leading-relaxed block">{text}</span>
+                            {impact && <span className="text-xs text-slate-500 mt-1 block">Impact: {impact}</span>}
+                          </div>
                         </div>
-                        <span className="text-sm text-slate-700 font-medium leading-relaxed">{rec}</span>
-                      </div>
-                    )}
+                      );
+                    }}
                     emptyMessage="Aucune recommandation"
                   />
                 ) : (
