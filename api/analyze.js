@@ -77,30 +77,106 @@ async function analyzeWebsite(url) {
   const htmlLower = html.toLowerCase();
   
   // Frameworks JS
-  if (htmlLower.includes('react') || $('script[src*="react"]').length) techStack.push({ name: 'React', category: 'Framework JS', confidence: 'high' });
-  if (htmlLower.includes('vue') || $('script[src*="vue"]').length) techStack.push({ name: 'Vue.js', category: 'Framework JS', confidence: 'high' });
-  if (htmlLower.includes('angular') || $('script[src*="angular"]').length) techStack.push({ name: 'Angular', category: 'Framework JS', confidence: 'high' });
-  if (htmlLower.includes('next') || $('script[src*="next"]').length) techStack.push({ name: 'Next.js', category: 'Framework', confidence: 'high' });
-  if (htmlLower.includes('nuxt')) techStack.push({ name: 'Nuxt.js', category: 'Framework', confidence: 'medium' });
-  if (htmlLower.includes('svelte')) techStack.push({ name: 'Svelte', category: 'Framework JS', confidence: 'medium' });
+  if (htmlLower.includes('react') || $('script[src*="react"]').length || $('[data-reactroot], [data-reactid]').length) {
+    techStack.push({ name: 'React', category: 'Framework JS' });
+  }
+  if (htmlLower.includes('vue') || $('script[src*="vue"]').length || $('[data-v-]').length) {
+    techStack.push({ name: 'Vue.js', category: 'Framework JS' });
+  }
+  if (htmlLower.includes('angular') || $('script[src*="angular"]').length || $('[ng-app], [ng-controller]').length) {
+    techStack.push({ name: 'Angular', category: 'Framework JS' });
+  }
+  if (htmlLower.includes('next') || $('script[src*="next"]').length || $('script[src*="_next"]').length) {
+    techStack.push({ name: 'Next.js', category: 'Framework' });
+  }
+  if (htmlLower.includes('nuxt') || $('script[src*="nuxt"]').length) {
+    techStack.push({ name: 'Nuxt.js', category: 'Framework' });
+  }
+  if (htmlLower.includes('svelte') || $('script[src*="svelte"]').length) {
+    techStack.push({ name: 'Svelte', category: 'Framework JS' });
+  }
+  if (htmlLower.includes('jquery') || $('script[src*="jquery"]').length) {
+    techStack.push({ name: 'jQuery', category: 'Library' });
+  }
   
   // CSS Frameworks
-  if (htmlLower.includes('tailwind') || $('link[href*="tailwind"]').length) techStack.push({ name: 'Tailwind CSS', category: 'CSS Framework', confidence: 'high' });
-  if (htmlLower.includes('bootstrap') || $('link[href*="bootstrap"]').length) techStack.push({ name: 'Bootstrap', category: 'CSS Framework', confidence: 'high' });
-  if (htmlLower.includes('bulma')) techStack.push({ name: 'Bulma', category: 'CSS Framework', confidence: 'medium' });
-  if (htmlLower.includes('foundation')) techStack.push({ name: 'Foundation', category: 'CSS Framework', confidence: 'medium' });
+  if (htmlLower.includes('tailwind') || $('link[href*="tailwind"]').length || $('[class*="tw-"]').length) {
+    techStack.push({ name: 'Tailwind CSS', category: 'CSS Framework' });
+  }
+  if (htmlLower.includes('bootstrap') || $('link[href*="bootstrap"]').length || $('[class*="col-"], [class*="btn-"]').length) {
+    techStack.push({ name: 'Bootstrap', category: 'CSS Framework' });
+  }
+  if (htmlLower.includes('bulma') || $('link[href*="bulma"]').length) {
+    techStack.push({ name: 'Bulma', category: 'CSS Framework' });
+  }
+  if (htmlLower.includes('foundation') || $('link[href*="foundation"]').length) {
+    techStack.push({ name: 'Foundation', category: 'CSS Framework' });
+  }
+  if (htmlLower.includes('materialize') || $('link[href*="materialize"]').length) {
+    techStack.push({ name: 'Materialize', category: 'CSS Framework' });
+  }
   
-  // CMS
-  if (htmlLower.includes('wp-content') || htmlLower.includes('wordpress')) techStack.push({ name: 'WordPress', category: 'CMS', confidence: 'high' });
-  if (htmlLower.includes('shopify')) techStack.push({ name: 'Shopify', category: 'E-commerce', confidence: 'high' });
-  if (htmlLower.includes('wix')) techStack.push({ name: 'Wix', category: 'Website Builder', confidence: 'high' });
-  if (htmlLower.includes('squarespace')) techStack.push({ name: 'Squarespace', category: 'Website Builder', confidence: 'high' });
+  // CMS & Platforms
+  if (htmlLower.includes('wp-content') || htmlLower.includes('wordpress') || htmlLower.includes('wp-includes')) {
+    techStack.push({ name: 'WordPress', category: 'CMS' });
+  }
+  if (htmlLower.includes('shopify') || htmlLower.includes('cdn.shopify')) {
+    techStack.push({ name: 'Shopify', category: 'E-commerce' });
+  }
+  if (htmlLower.includes('wix') || htmlLower.includes('wixstatic')) {
+    techStack.push({ name: 'Wix', category: 'Website Builder' });
+  }
+  if (htmlLower.includes('squarespace') || htmlLower.includes('sqsp')) {
+    techStack.push({ name: 'Squarespace', category: 'Website Builder' });
+  }
+  if (htmlLower.includes('webflow') || htmlLower.includes('webflow.io')) {
+    techStack.push({ name: 'Webflow', category: 'Website Builder' });
+  }
+  if (htmlLower.includes('drupal')) {
+    techStack.push({ name: 'Drupal', category: 'CMS' });
+  }
+  if (htmlLower.includes('joomla')) {
+    techStack.push({ name: 'Joomla', category: 'CMS' });
+  }
   
   // Analytics & Marketing
-  if (htmlLower.includes('google-analytics') || htmlLower.includes('gtag')) techStack.push({ name: 'Google Analytics', category: 'Analytics', confidence: 'high' });
-  if (htmlLower.includes('gtm') || htmlLower.includes('googletagmanager')) techStack.push({ name: 'Google Tag Manager', category: 'Tag Manager', confidence: 'high' });
-  if (htmlLower.includes('facebook') && htmlLower.includes('pixel')) techStack.push({ name: 'Facebook Pixel', category: 'Marketing', confidence: 'high' });
-  if (htmlLower.includes('hotjar')) techStack.push({ name: 'Hotjar', category: 'Analytics', confidence: 'high' });
+  if (htmlLower.includes('google-analytics') || htmlLower.includes('gtag') || htmlLower.includes('ga.js')) {
+    techStack.push({ name: 'Google Analytics', category: 'Analytics' });
+  }
+  if (htmlLower.includes('gtm') || htmlLower.includes('googletagmanager')) {
+    techStack.push({ name: 'Google Tag Manager', category: 'Tag Manager' });
+  }
+  if ((htmlLower.includes('facebook') || htmlLower.includes('fbq')) && htmlLower.includes('pixel')) {
+    techStack.push({ name: 'Facebook Pixel', category: 'Marketing' });
+  }
+  if (htmlLower.includes('hotjar')) {
+    techStack.push({ name: 'Hotjar', category: 'Analytics' });
+  }
+  if (htmlLower.includes('mixpanel')) {
+    techStack.push({ name: 'Mixpanel', category: 'Analytics' });
+  }
+  
+  // Fonts & Icons
+  if (htmlLower.includes('font-awesome') || $('link[href*="font-awesome"]').length) {
+    techStack.push({ name: 'Font Awesome', category: 'Icons' });
+  }
+  if (htmlLower.includes('google') && htmlLower.includes('fonts')) {
+    techStack.push({ name: 'Google Fonts', category: 'Fonts' });
+  }
+  
+  // CDN & Hosting
+  if (htmlLower.includes('cloudflare')) {
+    techStack.push({ name: 'Cloudflare', category: 'CDN' });
+  }
+  if (htmlLower.includes('amazonaws') || htmlLower.includes('aws')) {
+    techStack.push({ name: 'AWS', category: 'Hosting' });
+  }
+  if (htmlLower.includes('vercel')) {
+    techStack.push({ name: 'Vercel', category: 'Hosting' });
+  }
+  if (htmlLower.includes('netlify')) {
+    techStack.push({ name: 'Netlify', category: 'Hosting' });
+  }
 
   // === ANALYSE DE SÉCURITÉ AVANCÉE ===
   const https = targetUrl.startsWith('https://');
@@ -243,8 +319,13 @@ async function analyzeWebsite(url) {
   if (hasForm) complexityScore += 10;
 
   const estimatedDays = Math.ceil(complexityScore / 10);
-  const freelancePrice = estimatedDays * 400; // 400€/jour freelance
-  const agencyPrice = estimatedDays * 800; // 800€/jour agence
+  const freelancePriceEUR = estimatedDays * 400; // 400€/jour freelance
+  const agencyPriceEUR = estimatedDays * 800; // 800€/jour agence
+  
+  // Conversion en Francs Guinéens (1 EUR = ~11,000 GNF)
+  const EUR_TO_GNF = 11000;
+  const freelancePriceGNF = Math.round(freelancePriceEUR * EUR_TO_GNF);
+  const agencyPriceGNF = Math.round(agencyPriceEUR * EUR_TO_GNF);
 
   const pricingFactors = [];
   if (hasEcommerce) pricingFactors.push('E-commerce (+30%)');
@@ -341,11 +422,14 @@ async function analyzeWebsite(url) {
     developerScore: devScore,
     recommendations,
     pricing: {
-      freelance: freelancePrice,
-      agency: agencyPrice,
+      freelance: freelancePriceGNF,
+      freelanceEUR: freelancePriceEUR,
+      agency: agencyPriceGNF,
+      agencyEUR: agencyPriceEUR,
       estimatedDays,
       complexityScore: Math.round(complexityScore),
-      resaleValue: Math.round(freelancePrice * 0.7),
+      resaleValue: Math.round(freelancePriceGNF * 0.7),
+      currency: 'GNF',
       domainAgeYears: 0,
       backlinkProfile: 0,
       trafficVolume: 0,
