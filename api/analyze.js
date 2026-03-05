@@ -72,7 +72,9 @@ async function analyzeWebsite(url) {
     throw new Error('Failed to parse HTML content');
   }
 
-  // Déclarer https et securityHeaders tôt pour l'utiliser dans la détection des technologies
+  // === DÉCLARATION DE TOUTES LES VARIABLES UTILISÉES DANS L'ANALYSE ===
+  // Ceci évite les erreurs "Cannot access before initialization"
+  
   const https = targetUrl.startsWith('https://');
   const securityHeaders = {
     strictTransportSecurity: response.headers.get('strict-transport-security'),
@@ -83,9 +85,38 @@ async function analyzeWebsite(url) {
     server: response.headers.get('server') || 'Unknown',
   };
 
+  const htmlLower = html.toLowerCase();
+  const hasEcommerce = htmlLower.includes('cart') || htmlLower.includes('panier') || htmlLower.includes('checkout');
+  const hasAuth = htmlLower.includes('login') || htmlLower.includes('signin') || htmlLower.includes('connexion');
+  
+  // Compteurs d'éléments
+  const imageCount = $('img').length;
+  const scriptCount = $('script').length;
+  const cssCount = $('link[rel="stylesheet"]').length;
+  const domElements = $('*').length;
+  const semanticElements = $('header, nav, main, article, section, aside, footer').length;
+  const ariaLabels = $('[aria-label], [aria-labelledby], [aria-describedby]').length;
+  const roleAttributes = $('[role]').length;
+  const inlineStyles = $('[style]').length;
+  
+  // Calcul de la profondeur DOM
+  let maxDepth = 0;
+  $('*').each((i, el) => {
+    let depth = 0;
+    let current = el;
+    while (current.parent) {
+      depth++;
+      current = current.parent;
+      if (depth > 100) break;
+    }
+    if (depth > maxDepth) maxDepth = depth;
+  });
+  
+  // Images avec lazy loading
+  const lazyLoadImages = $('img[loading="lazy"]').length;
+
   // === ANALYSE EXHAUSTIVE DES TECHNOLOGIES ===
   const techStack = [];
-  const htmlLower = html.toLowerCase();
   const detectedTechs = new Set(); // Pour éviter les doublons
   
   // Helper pour ajouter une tech
@@ -419,30 +450,11 @@ async function analyzeWebsite(url) {
   const lang = $('html').attr('lang') || '';
   const h1Count = $('h1').length;
   const h1Text = $('h1').first().text().trim();
-  const imageCount = $('img').length;
   const imagesWithAlt = $('img[alt]').length;
   const imagesWithoutAlt = imageCount - imagesWithAlt;
-  const lazyLoadImages = $('img[loading="lazy"]').length;
   const linkCount = $('a').length;
   const externalLinks = $('a[href^="http"]').length;
   const internalLinks = linkCount - externalLinks;
-  const domElements = $('*').length;
-  const scriptCount = $('script').length;
-  const cssCount = $('link[rel="stylesheet"]').length;
-  const inlineStyles = $('[style]').length;
-
-  // Calcul de la profondeur DOM
-  let maxDepth = 0;
-  $('*').each((i, el) => {
-    let depth = 0;
-    let current = el;
-    while (current.parent) {
-      depth++;
-      current = current.parent;
-      if (depth > 100) break; // Sécurité
-    }
-    if (depth > maxDepth) maxDepth = depth;
-  });
 
   // Ratio texte/HTML
   const textContent = $('body').text().replace(/\s+/g, ' ').trim();
@@ -453,10 +465,7 @@ async function analyzeWebsite(url) {
   // GDPR
   const gdprCompliant = htmlLower.includes('cookie') && (htmlLower.includes('consent') || htmlLower.includes('accepter'));
 
-  // Accessibilité
-  const ariaLabels = $('[aria-label], [aria-labelledby], [aria-describedby]').length;
-  const roleAttributes = $('[role]').length;
-  const semanticElements = $('header, nav, main, article, section, aside, footer').length;
+  // Accessibilité - formLabels et formInputs
   const formLabels = $('label').length;
   const formInputs = $('input, textarea, select').length;
 
@@ -758,8 +767,6 @@ async function analyzeWebsite(url) {
   complexityScore += linkCount > 50 ? 15 : linkCount > 20 ? 10 : 5;
   complexityScore += imageCount > 30 ? 15 : imageCount > 10 ? 10 : 5;
   
-  const hasEcommerce = htmlLower.includes('cart') || htmlLower.includes('panier') || htmlLower.includes('checkout');
-  const hasAuth = htmlLower.includes('login') || htmlLower.includes('signin') || htmlLower.includes('connexion');
   const hasForm = $('form').length > 0;
   
   if (hasEcommerce) complexityScore += 30;
