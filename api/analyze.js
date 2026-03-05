@@ -199,11 +199,10 @@ async function analyzeWebsite(url) {
     return href.startsWith('http') && !href.includes(hostname);
   }).length;
 
-  // === ANALYSE EXHAUSTIVE DES TECHNOLOGIES ===
+  // === ANALYSE EXHAUSTIVE DES TECHNOLOGIES (DÉTECTION STRICTE) ===
   const techStack = [];
-  const detectedTechs = new Set(); // Pour éviter les doublons
+  const detectedTechs = new Set();
   
-  // Helper pour ajouter une tech
   const addTech = (name, category) => {
     if (!detectedTechs.has(name)) {
       techStack.push({ name, category });
@@ -211,7 +210,7 @@ async function analyzeWebsite(url) {
     }
   };
 
-  // === 1. LANGAGES DE BASE (toujours présents) ===
+  // === 1. LANGAGES DE BASE ===
   addTech('HTML5', 'Langage');
   if ($('style').length > 0 || $('link[rel="stylesheet"]').length > 0) {
     addTech('CSS3', 'Langage');
@@ -220,280 +219,200 @@ async function analyzeWebsite(url) {
     addTech('JavaScript', 'Langage');
   }
 
-  // === 2. FRAMEWORKS & LIBRARIES JS ===
-  if (htmlLower.includes('react') || $('script[src*="react"]').length || $('[data-reactroot], [data-reactid]').length) {
+  // === 2. FRAMEWORKS JS (détection stricte) ===
+  if ($('script[src*="react"]').length > 0 || $('[data-reactroot], [data-reactid]').length > 0 || html.includes('__NEXT_DATA__')) {
     addTech('React', 'Framework JS');
   }
-  if (htmlLower.includes('vue') || $('script[src*="vue"]').length || $('[data-v-]').length) {
+  if ($('script[src*="vue"]').length > 0 || $('[data-v-]').length > 0 || html.includes('Vue.config')) {
     addTech('Vue.js', 'Framework JS');
   }
-  if (htmlLower.includes('angular') || $('script[src*="angular"]').length || $('[ng-app], [ng-controller]').length) {
+  if ($('script[src*="angular"]').length > 0 || $('[ng-app], [ng-controller], [ng-version]').length > 0) {
     addTech('Angular', 'Framework JS');
   }
-  if (htmlLower.includes('next') || $('script[src*="next"]').length || $('script[src*="_next"]').length) {
+  if ($('script[src*="_next"]').length > 0 || html.includes('__NEXT_DATA__')) {
     addTech('Next.js', 'Framework');
   }
-  if (htmlLower.includes('nuxt') || $('script[src*="nuxt"]').length) {
+  if ($('script[src*="nuxt"]').length > 0 || html.includes('__NUXT__')) {
     addTech('Nuxt.js', 'Framework');
   }
-  if (htmlLower.includes('svelte') || $('script[src*="svelte"]').length) {
+  if ($('script[src*="svelte"]').length > 0) {
     addTech('Svelte', 'Framework JS');
   }
-  if (htmlLower.includes('jquery') || $('script[src*="jquery"]').length) {
+  if ($('script[src*="jquery"]').length > 0 || (typeof window !== 'undefined' && html.includes('jQuery'))) {
     addTech('jQuery', 'Library');
   }
-  if (htmlLower.includes('lodash') || $('script[src*="lodash"]').length) {
+  if ($('script[src*="lodash"]').length > 0 || html.includes('lodash.min')) {
     addTech('Lodash', 'Library');
   }
-  if (htmlLower.includes('axios') || $('script[src*="axios"]').length) {
+  if ($('script[src*="axios"]').length > 0) {
     addTech('Axios', 'Library');
   }
-  if (htmlLower.includes('gsap') || $('script[src*="gsap"]').length) {
+  if ($('script[src*="gsap"]').length > 0 || html.includes('gsap.min')) {
     addTech('GSAP', 'Animation');
   }
-  if (htmlLower.includes('three.js') || htmlLower.includes('threejs') || $('script[src*="three"]').length) {
+  if ($('script[src*="three"]').length > 0 || html.includes('three.min')) {
     addTech('Three.js', '3D Graphics');
   }
-  if (htmlLower.includes('d3.js') || htmlLower.includes('d3js') || $('script[src*="d3"]').length) {
+  if ($('script[src*="d3"]').length > 0 || html.includes('d3.min')) {
     addTech('D3.js', 'Data Visualization');
   }
-  if (htmlLower.includes('chart.js') || $('script[src*="chart"]').length) {
+  if ($('script[src*="chart"]').length > 0 || html.includes('chart.min')) {
     addTech('Chart.js', 'Charts');
   }
   
-  // === 3. CSS FRAMEWORKS ===
-  if (htmlLower.includes('tailwind') || $('link[href*="tailwind"]').length || $('[class*="tw-"]').length) {
+  // === 3. CSS FRAMEWORKS (détection stricte) ===
+  if ($('link[href*="tailwind"]').length > 0 || html.includes('tailwindcss')) {
     addTech('Tailwind CSS', 'CSS Framework');
   }
-  if (htmlLower.includes('bootstrap') || $('link[href*="bootstrap"]').length || $('[class*="col-"], [class*="btn-"]').length) {
+  if ($('link[href*="bootstrap"]').length > 0 || html.includes('bootstrap.min')) {
     addTech('Bootstrap', 'CSS Framework');
   }
-  if (htmlLower.includes('bulma') || $('link[href*="bulma"]').length) {
+  if ($('link[href*="bulma"]').length > 0) {
     addTech('Bulma', 'CSS Framework');
   }
-  if (htmlLower.includes('foundation') || $('link[href*="foundation"]').length) {
+  if ($('link[href*="foundation"]').length > 0) {
     addTech('Foundation', 'CSS Framework');
   }
-  if (htmlLower.includes('materialize') || $('link[href*="materialize"]').length) {
+  if ($('link[href*="materialize"]').length > 0) {
     addTech('Materialize', 'CSS Framework');
   }
-  if (htmlLower.includes('semantic-ui') || $('link[href*="semantic"]').length) {
-    addTech('Semantic UI', 'CSS Framework');
-  }
-  if (htmlLower.includes('uikit') || $('link[href*="uikit"]').length) {
-    addTech('UIkit', 'CSS Framework');
-  }
   
-  // === 4. CMS & PLATFORMS ===
-  if (htmlLower.includes('wp-content') || htmlLower.includes('wordpress') || htmlLower.includes('wp-includes')) {
+  // === 4. CMS & PLATFORMS (détection stricte) ===
+  if (html.includes('wp-content') || html.includes('wp-includes')) {
     addTech('WordPress', 'CMS');
   }
-  if (htmlLower.includes('shopify') || htmlLower.includes('cdn.shopify')) {
+  if (html.includes('cdn.shopify.com') || html.includes('myshopify.com')) {
     addTech('Shopify', 'E-commerce');
   }
-  if (htmlLower.includes('wix') || htmlLower.includes('wixstatic')) {
+  if (html.includes('wixstatic.com') || html.includes('parastorage.com')) {
     addTech('Wix', 'Website Builder');
   }
-  if (htmlLower.includes('squarespace') || htmlLower.includes('sqsp')) {
+  if (html.includes('squarespace.com') || html.includes('sqsp.com')) {
     addTech('Squarespace', 'Website Builder');
   }
-  if (htmlLower.includes('webflow') || htmlLower.includes('webflow.io')) {
+  if (html.includes('webflow.io') || html.includes('webflow.com')) {
     addTech('Webflow', 'Website Builder');
   }
-  if (htmlLower.includes('drupal')) {
+  if (html.includes('/sites/all/') || html.includes('Drupal.settings')) {
     addTech('Drupal', 'CMS');
   }
-  if (htmlLower.includes('joomla')) {
+  if (html.includes('/components/com_') || html.includes('Joomla!')) {
     addTech('Joomla', 'CMS');
   }
-  if (htmlLower.includes('magento')) {
+  if (html.includes('Mage.Cookies') || html.includes('magento')) {
     addTech('Magento', 'E-commerce');
   }
-  if (htmlLower.includes('prestashop')) {
+  if (html.includes('prestashop') || html.includes('ps_version')) {
     addTech('PrestaShop', 'E-commerce');
   }
-  if (htmlLower.includes('woocommerce')) {
+  if (html.includes('woocommerce') || html.includes('wc-ajax')) {
     addTech('WooCommerce', 'E-commerce');
   }
   
-  // === 5. ANALYTICS & MARKETING ===
-  if (htmlLower.includes('google-analytics') || htmlLower.includes('gtag') || htmlLower.includes('ga.js')) {
+  // === 5. ANALYTICS (détection stricte) ===
+  if ($('script[src*="google-analytics"]').length > 0 || html.includes('gtag(') || html.includes('ga(')) {
     addTech('Google Analytics', 'Analytics');
   }
-  if (htmlLower.includes('gtm') || htmlLower.includes('googletagmanager')) {
+  if ($('script[src*="googletagmanager"]').length > 0 || html.includes('GTM-')) {
     addTech('Google Tag Manager', 'Tag Manager');
   }
-  if ((htmlLower.includes('facebook') || htmlLower.includes('fbq')) && htmlLower.includes('pixel')) {
+  if (html.includes('fbq(') && html.includes('facebook')) {
     addTech('Facebook Pixel', 'Marketing');
   }
-  if (htmlLower.includes('hotjar')) {
+  if ($('script[src*="hotjar"]').length > 0) {
     addTech('Hotjar', 'Analytics');
   }
-  if (htmlLower.includes('mixpanel')) {
+  if ($('script[src*="mixpanel"]').length > 0) {
     addTech('Mixpanel', 'Analytics');
   }
-  if (htmlLower.includes('segment')) {
-    addTech('Segment', 'Analytics');
-  }
-  if (htmlLower.includes('amplitude')) {
-    addTech('Amplitude', 'Analytics');
-  }
-  if (htmlLower.includes('matomo') || htmlLower.includes('piwik')) {
-    addTech('Matomo', 'Analytics');
-  }
   
-  // === 6. FONTS & ICONS ===
-  if (htmlLower.includes('font-awesome') || $('link[href*="font-awesome"]').length) {
+  // === 6. FONTS & ICONS (détection stricte) ===
+  if ($('link[href*="font-awesome"]').length > 0 || $('link[href*="fontawesome"]').length > 0) {
     addTech('Font Awesome', 'Icons');
   }
-  if (htmlLower.includes('google') && htmlLower.includes('fonts')) {
+  if ($('link[href*="fonts.googleapis.com"]').length > 0) {
     addTech('Google Fonts', 'Fonts');
   }
-  if (htmlLower.includes('typekit') || htmlLower.includes('adobe fonts')) {
+  if ($('link[href*="use.typekit"]').length > 0) {
     addTech('Adobe Fonts', 'Fonts');
   }
-  if (htmlLower.includes('material-icons') || htmlLower.includes('material icons')) {
-    addTech('Material Icons', 'Icons');
-  }
-  if (htmlLower.includes('ionicons')) {
-    addTech('Ionicons', 'Icons');
-  }
-  if (htmlLower.includes('feather')) {
-    addTech('Feather Icons', 'Icons');
-  }
   
-  // === 7. CDN & HOSTING ===
-  if (htmlLower.includes('cloudflare')) {
+  // === 7. CDN & HOSTING (détection stricte via headers et URLs) ===
+  if (html.includes('cloudflare') || securityHeaders.server.toLowerCase().includes('cloudflare')) {
     addTech('Cloudflare', 'CDN');
   }
-  if (htmlLower.includes('amazonaws') || htmlLower.includes('aws')) {
+  if (html.includes('amazonaws.com')) {
     addTech('AWS', 'Hosting');
   }
-  if (htmlLower.includes('vercel')) {
+  if (html.includes('vercel.app') || html.includes('vercel-analytics')) {
     addTech('Vercel', 'Hosting');
   }
-  if (htmlLower.includes('netlify')) {
+  if (html.includes('netlify.app') || html.includes('netlify.com')) {
     addTech('Netlify', 'Hosting');
   }
-  if (htmlLower.includes('github.io') || htmlLower.includes('github pages')) {
+  if (targetUrl.includes('github.io')) {
     addTech('GitHub Pages', 'Hosting');
   }
-  if (htmlLower.includes('heroku')) {
-    addTech('Heroku', 'Hosting');
-  }
-  if (htmlLower.includes('digitalocean')) {
-    addTech('DigitalOcean', 'Hosting');
-  }
   
-  // === 8. PAYMENT & SERVICES ===
-  if (htmlLower.includes('stripe')) {
+  // === 8. PAYMENT (détection stricte) ===
+  if ($('script[src*="stripe"]').length > 0 || html.includes('stripe.com')) {
     addTech('Stripe', 'Payment');
   }
-  if (htmlLower.includes('paypal')) {
+  if ($('script[src*="paypal"]').length > 0 || html.includes('paypal.com')) {
     addTech('PayPal', 'Payment');
   }
-  if (htmlLower.includes('square')) {
-    addTech('Square', 'Payment');
-  }
   
-  // === 9. COMMUNICATION ===
-  if (htmlLower.includes('intercom')) {
+  // === 9. COMMUNICATION (détection stricte) ===
+  if ($('script[src*="intercom"]').length > 0) {
     addTech('Intercom', 'Chat');
   }
-  if (htmlLower.includes('zendesk')) {
+  if ($('script[src*="zendesk"]').length > 0) {
     addTech('Zendesk', 'Support');
   }
-  if (htmlLower.includes('drift')) {
-    addTech('Drift', 'Chat');
-  }
-  if (htmlLower.includes('tawk.to') || htmlLower.includes('tawk')) {
+  if ($('script[src*="tawk.to"]').length > 0) {
     addTech('Tawk.to', 'Chat');
   }
-  if (htmlLower.includes('crisp')) {
-    addTech('Crisp', 'Chat');
-  }
   
-  // === 10. MEDIA & CONTENT ===
-  if (htmlLower.includes('youtube') || $('iframe[src*="youtube"]').length) {
+  // === 10. MEDIA (détection stricte) ===
+  if ($('iframe[src*="youtube.com"], iframe[src*="youtu.be"]').length > 0) {
     addTech('YouTube', 'Video');
   }
-  if (htmlLower.includes('vimeo') || $('iframe[src*="vimeo"]').length) {
+  if ($('iframe[src*="vimeo.com"]').length > 0) {
     addTech('Vimeo', 'Video');
   }
-  if (htmlLower.includes('soundcloud')) {
-    addTech('SoundCloud', 'Audio');
-  }
-  if (htmlLower.includes('spotify')) {
-    addTech('Spotify', 'Audio');
-  }
   
-  // === 11. MAPS ===
-  if (htmlLower.includes('google') && htmlLower.includes('maps')) {
+  // === 11. MAPS (détection stricte) ===
+  if ($('script[src*="maps.googleapis.com"]').length > 0 || $('script[src*="maps.google.com"]').length > 0) {
     addTech('Google Maps', 'Maps');
   }
-  if (htmlLower.includes('mapbox')) {
+  if ($('script[src*="mapbox"]').length > 0) {
     addTech('Mapbox', 'Maps');
   }
-  if (htmlLower.includes('leaflet')) {
-    addTech('Leaflet', 'Maps');
-  }
   
-  // === 12. SOCIAL MEDIA ===
-  if (htmlLower.includes('twitter') || htmlLower.includes('x.com')) {
-    addTech('Twitter/X', 'Social');
-  }
-  if (htmlLower.includes('instagram')) {
-    addTech('Instagram', 'Social');
-  }
-  if (htmlLower.includes('linkedin')) {
-    addTech('LinkedIn', 'Social');
-  }
-  
-  // === 13. SEO & PERFORMANCE ===
-  if (htmlLower.includes('schema.org') || $('script[type="application/ld+json"]').length) {
+  // === 12. SEO & PERFORMANCE (détection stricte) ===
+  if ($('script[type="application/ld+json"]').length > 0) {
     addTech('Schema.org', 'SEO');
-  }
-  if ($('link[rel="preload"]').length > 0) {
-    addTech('Resource Preloading', 'Performance');
   }
   if ($('img[loading="lazy"]').length > 0) {
     addTech('Lazy Loading', 'Performance');
   }
-  if ($('link[rel="dns-prefetch"]').length > 0 || $('link[rel="preconnect"]').length > 0) {
-    addTech('DNS Prefetch', 'Performance');
-  }
-  
-  // === 14. SECURITY ===
   if (https) {
     addTech('HTTPS/SSL', 'Security');
   }
-  if (securityHeaders.contentSecurityPolicy) {
-    addTech('Content Security Policy', 'Security');
-  }
-  
-  // === 15. RESPONSIVE & MOBILE ===
   if ($('meta[name="viewport"]').length > 0) {
     addTech('Responsive Design', 'Mobile');
   }
   if ($('link[rel="manifest"]').length > 0) {
-    addTech('PWA Manifest', 'Mobile');
-  }
-  if ($('meta[name="apple-mobile-web-app-capable"]').length > 0) {
-    addTech('iOS Web App', 'Mobile');
+    addTech('PWA', 'Mobile');
   }
 
-  // Si moins de 10 technologies, ajouter des technologies génériques basées sur le contenu
+  // Si moins de 10 technologies, ajouter des technologies basées sur le contenu réel
   if (techStack.length < 10) {
     if ($('form').length > 0) addTech('HTML Forms', 'Feature');
     if ($('video').length > 0) addTech('HTML5 Video', 'Media');
     if ($('audio').length > 0) addTech('HTML5 Audio', 'Media');
     if ($('canvas').length > 0) addTech('HTML5 Canvas', 'Graphics');
-    if ($('svg').length > 0) addTech('SVG Graphics', 'Graphics');
-    if ($('[data-aos], [data-animate], [class*="animate"]').length > 0) addTech('CSS Animations', 'Animation');
-    if ($('picture').length > 0 || $('source').length > 0) addTech('Responsive Images', 'Performance');
-    if (htmlLower.includes('cookie') || htmlLower.includes('gdpr')) addTech('Cookie Consent', 'Compliance');
-    if ($('meta[property^="og:"]').length > 0) addTech('Open Graph Protocol', 'SEO');
-    if ($('link[rel="canonical"]').length > 0) addTech('Canonical URLs', 'SEO');
+    if ($('svg').length > 0) addTech('SVG', 'Graphics');
   }
 
   // Limiter à 20 technologies max
