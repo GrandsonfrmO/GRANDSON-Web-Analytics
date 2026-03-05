@@ -29,8 +29,7 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
-    "dev": "tsx server.ts",
-    "start": "node server.ts",
+    "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
@@ -38,8 +37,7 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "vercel-build": "npm run build"
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
