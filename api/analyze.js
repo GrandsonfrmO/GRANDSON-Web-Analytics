@@ -247,17 +247,123 @@ async function analyzeWebsite(url) {
   if ($('script[src*="axios"]').length > 0) {
     addTech('Axios', 'Library');
   }
-  if ($('script[src*="gsap"]').length > 0 || html.includes('gsap.min')) {
+  if ($('script[src*="gsap"]').length > 0 || html.includes('gsap.min') || html.includes('GreenSock')) {
     addTech('GSAP', 'Animation');
   }
-  if ($('script[src*="three"]').length > 0 || html.includes('three.min')) {
+  
+  // === DÉTECTION 3D & GRAPHICS AVANCÉE ===
+  // Three.js (détection complète)
+  if ($('script[src*="three"]').length > 0 || 
+      html.includes('three.min') || 
+      html.includes('THREE.') || 
+      html.includes('WebGLRenderer') ||
+      html.includes('PerspectiveCamera') ||
+      $('canvas[data-engine="three.js"]').length > 0) {
     addTech('Three.js', '3D Graphics');
   }
-  if ($('script[src*="d3"]').length > 0 || html.includes('d3.min')) {
+  
+  // Babylon.js
+  if ($('script[src*="babylon"]').length > 0 || 
+      html.includes('babylon.min') || 
+      html.includes('BABYLON.') ||
+      html.includes('BabylonJS')) {
+    addTech('Babylon.js', '3D Graphics');
+  }
+  
+  // A-Frame (WebVR/AR)
+  if ($('script[src*="aframe"]').length > 0 || 
+      $('a-scene').length > 0 || 
+      html.includes('aframe.min')) {
+    addTech('A-Frame', 'WebVR/AR');
+  }
+  
+  // PlayCanvas
+  if ($('script[src*="playcanvas"]').length > 0 || 
+      html.includes('pc.Application') ||
+      html.includes('PlayCanvas')) {
+    addTech('PlayCanvas', '3D Engine');
+  }
+  
+  // PixiJS (2D WebGL)
+  if ($('script[src*="pixi"]').length > 0 || 
+      html.includes('pixi.min') || 
+      html.includes('PIXI.')) {
+    addTech('PixiJS', '2D Graphics');
+  }
+  
+  // P5.js (Creative Coding)
+  if ($('script[src*="p5"]').length > 0 || 
+      html.includes('p5.min') || 
+      html.includes('function setup()') && html.includes('function draw()')) {
+    addTech('P5.js', 'Creative Coding');
+  }
+  
+  // Matter.js (Physics)
+  if ($('script[src*="matter"]').length > 0 || 
+      html.includes('matter.min') || 
+      html.includes('Matter.Engine')) {
+    addTech('Matter.js', 'Physics Engine');
+  }
+  
+  // Cannon.js (3D Physics)
+  if ($('script[src*="cannon"]').length > 0 || 
+      html.includes('cannon.min') || 
+      html.includes('CANNON.')) {
+    addTech('Cannon.js', '3D Physics');
+  }
+  
+  // Anime.js (Animation)
+  if ($('script[src*="anime"]').length > 0 || 
+      html.includes('anime.min') || 
+      html.includes('anime({')) {
+    addTech('Anime.js', 'Animation');
+  }
+  
+  // Lottie (Animation)
+  if ($('script[src*="lottie"]').length > 0 || 
+      html.includes('lottie.min') || 
+      html.includes('bodymovin')) {
+    addTech('Lottie', 'Animation');
+  }
+  
+  // WebGL détecté (sans framework spécifique)
+  const hasCanvas = $('canvas').length > 0;
+  const hasWebGLContext = html.includes('getContext("webgl")') || 
+                          html.includes('getContext("webgl2")') || 
+                          html.includes('getContext(\'webgl\')') ||
+                          html.includes('getContext(\'webgl2\')');
+  if (hasCanvas && hasWebGLContext && !techStack.some(t => ['Three.js', 'Babylon.js', 'PixiJS'].includes(t.name))) {
+    addTech('WebGL', '3D Graphics');
+  }
+  
+  // Canvas 2D (si pas de WebGL)
+  if (hasCanvas && !hasWebGLContext && !techStack.some(t => t.name === 'PixiJS')) {
+    const has2DContext = html.includes('getContext("2d")') || html.includes('getContext(\'2d\')');
+    if (has2DContext) {
+      addTech('Canvas 2D', '2D Graphics');
+    }
+  }
+  
+  if ($('script[src*="d3"]').length > 0 || html.includes('d3.min') || html.includes('d3.select')) {
     addTech('D3.js', 'Data Visualization');
   }
-  if ($('script[src*="chart"]').length > 0 || html.includes('chart.min')) {
+  if ($('script[src*="chart"]').length > 0 || html.includes('chart.min') || html.includes('Chart.js')) {
     addTech('Chart.js', 'Charts');
+  }
+  
+  // Recharts (React)
+  if (html.includes('recharts') || $('script[src*="recharts"]').length > 0) {
+    addTech('Recharts', 'Charts');
+  }
+  
+  // Highcharts
+  if ($('script[src*="highcharts"]').length > 0 || html.includes('Highcharts.')) {
+    addTech('Highcharts', 'Charts');
+  }
+  
+  // Plotly
+  if ($('script[src*="plotly"]').length > 0 || html.includes('Plotly.')) {
+    addTech('Plotly', 'Data Visualization');
   }
   
   // === 3. CSS FRAMEWORKS (détection stricte) ===
@@ -1052,20 +1158,62 @@ async function analyzeWebsite(url) {
   if (techStack.length >= 5) pricingFactors.push('Stack technique avancé (+25 pts)');
   if (domElements > 1000) pricingFactors.push('Site complexe (+30 pts)');
 
-  // === FEATURES DÉTECTÉES ===
+  // === FEATURES DÉTECTÉES (AMÉLIORÉES) ===
   const features = [];
+  
+  // Formulaires et recherche
   if ($('form').length > 0) features.push('Formulaires');
   if ($('input[type="search"]').length > 0) features.push('Recherche');
-  if ($('video').length > 0) features.push('Vidéo');
-  if ($('audio').length > 0) features.push('Audio');
-  if ($('canvas').length > 0) features.push('Canvas/WebGL');
-  if ($('iframe').length > 0) features.push('iFrames');
-  if (htmlLower.includes('map') || htmlLower.includes('google.maps')) features.push('Carte interactive');
+  
+  // Média
+  if ($('video').length > 0) features.push('Vidéo HTML5');
+  if ($('audio').length > 0) features.push('Audio HTML5');
+  
+  // Graphics & 3D (détection avancée)
+  const has3D = techStack.some(t => ['Three.js', 'Babylon.js', 'PlayCanvas', 'A-Frame'].includes(t.name));
+  const has2DGraphics = techStack.some(t => ['PixiJS', 'P5.js', 'Canvas 2D'].includes(t.name));
+  const hasWebGL = techStack.some(t => t.name === 'WebGL');
+  const hasPhysics = techStack.some(t => ['Matter.js', 'Cannon.js'].includes(t.name));
+  
+  if (has3D) features.push('Graphiques 3D');
+  if (hasWebGL && !has3D) features.push('WebGL');
+  if (has2DGraphics) features.push('Graphiques 2D avancés');
+  if (hasPhysics) features.push('Moteur physique');
+  if ($('canvas').length > 0 && !has3D && !has2DGraphics && !hasWebGL) features.push('Canvas');
+  
+  // Animations
+  const hasAdvancedAnimation = techStack.some(t => ['GSAP', 'Anime.js', 'Lottie'].includes(t.name));
+  if (hasAdvancedAnimation) features.push('Animations avancées');
+  else if ($('[data-aos], [data-animate], [class*="animate"]').length > 0) features.push('Animations CSS');
+  
+  // Cartes
+  if ($('script[src*="maps.googleapis.com"]').length > 0 || $('script[src*="mapbox"]').length > 0) {
+    features.push('Carte interactive');
+  }
+  
+  // iFrames
+  if ($('iframe').length > 0) features.push('Contenu embarqué (iFrames)');
+  
+  // Auth & E-commerce
   if (hasAuth) features.push('Authentification');
   if (hasEcommerce) features.push('E-commerce');
-  if ($('[data-aos], [data-animate]').length > 0) features.push('Animations');
+  
+  // SEO & Social
   if (hasOpenGraph) features.push('Open Graph');
   if (hasCanonical) features.push('URL Canonique');
+  if (structuredData > 0) features.push('Données structurées');
+  
+  // PWA & Mobile
+  if ($('link[rel="manifest"]').length > 0) features.push('Progressive Web App');
+  if (touchIcons > 0) features.push('Icônes tactiles');
+  
+  // Performance
+  if (lazyLoadImages > 0) features.push('Lazy Loading');
+  if (hasCompression) features.push('Compression activée');
+  
+  // Interactivité
+  if (ctaButtons > 5) features.push('Appels à l\'action');
+  if (popups > 0) features.push('Modales/Pop-ups');
 
   // === RECOMMANDATIONS INTELLIGENTES AMÉLIORÉES ===
   const recommendations = [];
