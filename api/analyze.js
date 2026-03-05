@@ -72,6 +72,9 @@ async function analyzeWebsite(url) {
     throw new Error('Failed to parse HTML content');
   }
 
+  // Déclarer https tôt pour l'utiliser dans la détection des technologies
+  const https = targetUrl.startsWith('https://');
+
   // === ANALYSE EXHAUSTIVE DES TECHNOLOGIES ===
   const techStack = [];
   const htmlLower = html.toLowerCase();
@@ -375,7 +378,6 @@ async function analyzeWebsite(url) {
 
 
   // === ANALYSE DE SÉCURITÉ AVANCÉE ===
-  const https = targetUrl.startsWith('https://');
   const securityHeaders = {
     strictTransportSecurity: response.headers.get('strict-transport-security'),
     contentSecurityPolicy: response.headers.get('content-security-policy'),
