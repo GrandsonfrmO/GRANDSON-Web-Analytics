@@ -183,25 +183,33 @@ async function analyzeWebsite(url) {
   const securityHeaders = {
     strictTransportSecurity: response.headers.get('strict-transport-security'),
     contentSecurityPolicy: response.headers.get('content-security-policy'),
-    xFrameOptions: response.headers.get('x-frame-options'),
+    xFrameOptions: response.headers.get('x-frame-options') || 'Not Set',
     xContentTypeOptions: response.headers.get('x-content-type-options'),
-    referrerPolicy: response.headers.get('referrer-policy'),
+    referrerPolicy: response.headers.get('referrer-policy') || 'Not Set',
+    server: response.headers.get('server') || 'Unknown',
   };
 
   const vulnerabilities = [];
+  const vulnerabilitiesList = [];
   let securityScore = https ? 80 : 30;
   
-  if (!https) vulnerabilities.push({ severity: 'critical', issue: 'Pas de HTTPS', impact: 'Données non chiffrées' });
+  if (!https) {
+    vulnerabilities.push({ severity: 'critical', issue: 'Pas de HTTPS', impact: 'Données non chiffrées' });
+    vulnerabilitiesList.push({ severity: 'High', title: 'HTTPS non activé', description: 'Le site n\'utilise pas HTTPS, les données ne sont pas chiffrées' });
+  }
   if (!securityHeaders.strictTransportSecurity && https) {
     vulnerabilities.push({ severity: 'medium', issue: 'HSTS manquant', impact: 'Vulnérable aux attaques downgrade' });
+    vulnerabilitiesList.push({ severity: 'Medium', title: 'HSTS manquant', description: 'Le header Strict-Transport-Security n\'est pas configuré' });
     securityScore -= 10;
   }
   if (!securityHeaders.contentSecurityPolicy) {
     vulnerabilities.push({ severity: 'medium', issue: 'CSP manquant', impact: 'Vulnérable aux attaques XSS' });
+    vulnerabilitiesList.push({ severity: 'Medium', title: 'CSP manquant', description: 'Pas de Content-Security-Policy configuré' });
     securityScore -= 10;
   }
-  if (!securityHeaders.xFrameOptions) {
+  if (!securityHeaders.xFrameOptions || securityHeaders.xFrameOptions === 'Not Set') {
     vulnerabilities.push({ severity: 'low', issue: 'X-Frame-Options manquant', impact: 'Vulnérable au clickjacking' });
+    vulnerabilitiesList.push({ severity: 'Low', title: 'X-Frame-Options manquant', description: 'Le site peut être intégré dans une iframe' });
     securityScore -= 5;
   }
 
@@ -209,12 +217,15 @@ async function analyzeWebsite(url) {
   const title = $('title').text().trim();
   const metaDescription = $('meta[name="description"]').attr('content') || '';
   const hasViewport = !!$('meta[name="viewport"]').attr('content');
+  const hasOpenGraph = !!$('meta[property^="og:"]').length;
+  const hasCanonical = !!$('link[rel="canonical"]').length;
   const lang = $('html').attr('lang') || '';
   const h1Count = $('h1').length;
   const h1Text = $('h1').first().text().trim();
   const imageCount = $('img').length;
   const imagesWithAlt = $('img[alt]').length;
   const imagesWithoutAlt = imageCount - imagesWithAlt;
+  const lazyLoadImages = $('img[loading="lazy"]').length;
   const linkCount = $('a').length;
   const externalLinks = $('a[href^="http"]').length;
   const internalLinks = linkCount - externalLinks;
@@ -223,12 +234,53 @@ async function analyzeWebsite(url) {
   const cssCount = $('link[rel="stylesheet"]').length;
   const inlineStyles = $('[style]').length;
 
+  // Calcul de la profondeur DOM
+  let maxDepth = 0;
+  $('*').each((i, el) => {
+    let depth = 0;
+    let current = el;
+    while (current.parent) {
+      depth++;
+      current = current.parent;
+      if (depth > 100) break; // Sécurité
+    }
+    if (depth > maxDepth) maxDepth = depth;
+  });
+
+  // Ratio texte/HTML
+  const textContent = $('body').text().replace(/\s+/g, ' ').trim();
+  const textLength = textContent.length;
+  const htmlLength = html.length;
+  const textToHtmlRatio = Math.round((textLength / htmlLength) * 100);
+
+  // GDPR
+  const gdprCompliant = htmlLower.includes('cookie') && (htmlLower.includes('consent') || htmlLower.includes('accepter'));
+
   // Accessibilité
   const ariaLabels = $('[aria-label], [aria-labelledby], [aria-describedby]').length;
   const roleAttributes = $('[role]').length;
   const semanticElements = $('header, nav, main, article, section, aside, footer').length;
   const formLabels = $('label').length;
   const formInputs = $('input, textarea, select').length;
+
+  // Lisibilité (basé sur la longueur des paragraphes)
+  let readabilityScore = 70;
+  const paragraphs = $('p');
+  let totalWords = 0;
+  paragraphs.each((i, el) => {
+    const text = $(el).text();
+    totalWords += text.split(/\s+/).length;
+  });
+  const avgWordsPerParagraph = paragraphs.length > 0 ? totalWords / paragraphs.length : 0;
+  if (avgWordsPerParagraph > 50 && avgWordsPerParagraph < 150) readabilityScore = 90;
+  else if (avgWordsPerParagraph > 150) readabilityScore = 60;
+
+  // Clarté de navigation
+  const navElements = $('nav').length;
+  const menuItems = $('nav a, nav li').length;
+  let navigationClarity = 50;
+  if (navElements >= 1 && menuItems >= 3 && menuItems <= 10) navigationClarity = 90;
+  else if (navElements >= 1) navigationClarity = 70;
 
   let uxScore = 100;
   const uxIssues = [];
@@ -282,6 +334,11 @@ async function analyzeWebsite(url) {
     uxIssues.push('Trop de styles inline (mauvaise pratique)');
   }
 
+  if (!hasOpenGraph) {
+    uxScore -= 5;
+    uxIssues.push('Balises Open Graph manquantes');
+  }
+
   uxScore = Math.max(0, uxScore);
 
   // === DÉTECTION DU NIVEAU DE DÉVELOPPEUR ===
@@ -303,7 +360,6 @@ async function analyzeWebsite(url) {
   // === ESTIMATION DE PRIX RÉALISTE ===
   let complexityScore = 0;
   
-  // Complexité basée sur le contenu
   complexityScore += Math.min(30, domElements / 100);
   complexityScore += Math.min(20, scriptCount * 2);
   complexityScore += techStack.length * 5;
@@ -319,10 +375,9 @@ async function analyzeWebsite(url) {
   if (hasForm) complexityScore += 10;
 
   const estimatedDays = Math.ceil(complexityScore / 10);
-  const freelancePriceEUR = estimatedDays * 400; // 400€/jour freelance
-  const agencyPriceEUR = estimatedDays * 800; // 800€/jour agence
+  const freelancePriceEUR = estimatedDays * 400;
+  const agencyPriceEUR = estimatedDays * 800;
   
-  // Conversion en Francs Guinéens (1 EUR = ~11,000 GNF)
   const EUR_TO_GNF = 11000;
   const freelancePriceGNF = Math.round(freelancePriceEUR * EUR_TO_GNF);
   const agencyPriceGNF = Math.round(agencyPriceEUR * EUR_TO_GNF);
@@ -345,6 +400,8 @@ async function analyzeWebsite(url) {
   if (hasAuth) features.push('Authentification');
   if (hasEcommerce) features.push('E-commerce');
   if ($('[data-aos], [data-animate]').length > 0) features.push('Animations');
+  if (hasOpenGraph) features.push('Open Graph');
+  if (hasCanonical) features.push('URL Canonique');
 
   // === RECOMMANDATIONS INTELLIGENTES ===
   const recommendations = [];
@@ -358,6 +415,9 @@ async function analyzeWebsite(url) {
   if (semanticElements < 3) recommendations.push({ priority: 'low', text: 'Utilisez plus d\'éléments sémantiques HTML5', impact: 'SEO' });
   if (inlineStyles > 10) recommendations.push({ priority: 'low', text: 'Réduisez les styles inline', impact: 'Performance' });
   if (scriptCount > 15) recommendations.push({ priority: 'medium', text: 'Optimisez le nombre de scripts', impact: 'Performance' });
+  if (!hasOpenGraph) recommendations.push({ priority: 'low', text: 'Ajoutez des balises Open Graph', impact: 'Réseaux sociaux' });
+  if (!hasCanonical) recommendations.push({ priority: 'low', text: 'Ajoutez une URL canonique', impact: 'SEO' });
+  if (lazyLoadImages === 0 && imageCount > 5) recommendations.push({ priority: 'medium', text: 'Activez le lazy loading pour les images', impact: 'Performance' });
 
   // === SCORE GLOBAL ===
   const overallScore = Math.round((securityScore * 0.3) + (uxScore * 0.5) + (devScore * 0.2));
@@ -381,9 +441,18 @@ async function analyzeWebsite(url) {
     techStack,
     security: {
       https,
+      hsts: !!securityHeaders.strictTransportSecurity,
+      xFrameOptions: securityHeaders.xFrameOptions,
+      csp: !!securityHeaders.contentSecurityPolicy,
+      xContentTypeOptions: !!securityHeaders.xContentTypeOptions,
+      referrerPolicy: securityHeaders.referrerPolicy,
+      server: securityHeaders.server,
       score: securityScore,
-      headers: securityHeaders,
-      vulnerabilitiesList: vulnerabilities
+      vulnerabilities: {
+        xssRisk: securityHeaders.contentSecurityPolicy ? 'Low' : 'Medium',
+        sqliRisk: 'Unknown'
+      },
+      vulnerabilitiesList
     },
     ux: {
       title,
@@ -392,6 +461,8 @@ async function analyzeWebsite(url) {
       metaDescriptionLength: metaDescription.length,
       hasMetaDescription: !!metaDescription,
       hasViewport,
+      hasOpenGraph,
+      hasCanonical,
       lang,
       h1Count,
       h1Text,
@@ -402,6 +473,10 @@ async function analyzeWebsite(url) {
       internalLinks,
       externalLinks,
       domElements,
+      domDepth: maxDepth,
+      textToHtmlRatio,
+      gdprCompliant,
+      lazyLoadRatio: imageCount > 0 ? Math.round((lazyLoadImages / imageCount) * 100) : 0,
       score: uxScore,
       issues: uxIssues,
       accessibility: {
@@ -412,7 +487,9 @@ async function analyzeWebsite(url) {
         formInputs,
         score: Math.round((ariaLabels + roleAttributes + semanticElements) / 3 * 10)
       },
-      mobileFriendliness: hasViewport ? 100 : 0
+      mobileFriendliness: hasViewport ? 100 : 0,
+      readabilityScore,
+      navigationClarity
     },
     designType: techStack.some(t => t.name.includes('WordPress')) ? 'CMS' : 
                 techStack.some(t => t.name.includes('Wix') || t.name.includes('Squarespace')) ? 'Website Builder' :
