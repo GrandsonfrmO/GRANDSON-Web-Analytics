@@ -6,6 +6,7 @@ import {
   Box, Server, Palette, FileCode, Cpu, LayoutTemplate, Info, History, Clock,
   Type, Image as ImageIcon, Link as LinkIcon, Bug, Award, TrendingUp, Gauge
 } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 import { cn } from './utils';
 import { motion } from 'motion/react';
 import { LoadingAnimation } from './components/LoadingAnimation';
@@ -1124,6 +1125,7 @@ export default function App() {
           </button>
         </div>
       </div>
+      <Analytics />
     </div>
   );
 }
