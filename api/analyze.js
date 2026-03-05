@@ -120,7 +120,22 @@ async function analyzeWebsite(url) {
     features,
     techStack,
     security: { https, score: securityScore, vulnerabilitiesList: [] },
-    ux: { title, hasMetaDescription, hasViewport, lang, h1Count, imageCount, linkCount, domElements, score: uxScore },
+    ux: { 
+      title, 
+      hasMetaDescription, 
+      hasViewport, 
+      lang, 
+      h1Count, 
+      imageCount, 
+      linkCount, 
+      domElements, 
+      score: uxScore,
+      accessibility: {
+        ariaCount: (html.match(/aria-/gi) || []).length,
+        semanticElements: (html.match(/<(header|nav|main|article|section|aside|footer)[^>]*>/gi) || []).length
+      },
+      mobileFriendliness: hasViewport ? 100 : 0
+    },
     designType: 'Unknown',
     aiProbability: 0,
     developerLevel: 'Unknown',
