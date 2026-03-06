@@ -55,6 +55,14 @@ interface AnalysisResult {
     referrerPolicy: string;
     server: string;
     score: number;
+    grade?: string;
+    securityTests?: {
+      transport: { score: number; max: number; tests: any[]; passed: number; failed: number };
+      headers: { score: number; max: number; tests: any[]; passed: number; failed: number };
+      content: { score: number; max: number; tests: any[]; passed: number; failed: number };
+      cookies: { score: number; max: number; tests: any[]; passed: number; failed: number };
+      vulnerabilities: { score: number; max: number; tests: any[]; passed: number; failed: number };
+    };
     vulnerabilities: {
       xssRisk: string;
       sqliRisk: string;
@@ -63,6 +71,9 @@ interface AnalysisResult {
       severity: 'High' | 'Medium' | 'Low';
       title: string;
       description: string;
+      cve?: string;
+      risk?: string;
+      remediation?: string;
     }[];
   };
   ux: {
@@ -93,7 +104,14 @@ interface AnalysisResult {
   designType: string;
   aiProbability: number;
   developerLevel: string;
-  recommendations: Array<{ priority: string; text: string; impact: string }> | string[];
+  recommendations: Array<{ 
+    priority: string; 
+    text: string; 
+    impact: string;
+    description?: string;
+    solution?: string;
+    benefit?: string;
+  }> | string[];
   overallScore: number;
   pricing: {
     freelance: number;
@@ -130,9 +148,22 @@ export default function App() {
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
+  const [expandedRecommendations, setExpandedRecommendations] = useState<Set<number>>(new Set());
 
   const [clientErrors, setClientErrors] = useState<any[]>([]);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
+
+  const toggleRecommendation = (index: number) => {
+    setExpandedRecommendations(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
 
   const fetchClientErrors = async () => {
     try {
@@ -1164,6 +1195,10 @@ export default function App() {
                       const priority = isObject ? rec.priority : 'medium';
                       const text = isObject ? rec.text : rec;
                       const impact = isObject ? rec.impact : '';
+                      const description = isObject ? rec.description : '';
+                      const solution = isObject ? rec.solution : '';
+                      const benefit = isObject ? rec.benefit : '';
+                      const isExpanded = expandedRecommendations.has(idx);
                       
                       const priorityColors = {
                         critical: 'bg-red-50/30 border-red-100/50 hover:bg-red-50/80',
@@ -1178,17 +1213,76 @@ export default function App() {
                         medium: 'bg-amber-100/50 text-amber-600',
                         low: 'bg-blue-100/50 text-blue-600'
                       };
+
+                      const priorityLabels = {
+                        critical: 'Critique',
+                        high: 'Haute',
+                        medium: 'Moyenne',
+                        low: 'Basse'
+                      };
                       
                       return (
-                        <div className={`flex items-start gap-3 p-5 rounded-3xl border transition-all hover:shadow-sm group h-full ${priorityColors[priority] || priorityColors.medium}`}>
-                          <div className={`p-1.5 rounded-full shrink-0 mt-0.5 group-hover:scale-110 transition-transform ${priorityIconColors[priority] || priorityIconColors.medium}`}>
-                            <ChevronRight className="w-4 h-4" />
+                        <motion.div 
+                          layout
+                          className={`flex flex-col gap-3 p-5 rounded-3xl border transition-all hover:shadow-md cursor-pointer group ${priorityColors[priority] || priorityColors.medium}`}
+                          onClick={() => toggleRecommendation(idx)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`p-1.5 rounded-full shrink-0 mt-0.5 group-hover:scale-110 transition-transform ${priorityIconColors[priority] || priorityIconColors.medium}`}>
+                              <ChevronRight className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-sm text-slate-700 font-bold leading-relaxed">{text}</span>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${priorityIconColors[priority] || priorityIconColors.medium}`}>
+                                  {priorityLabels[priority] || 'Moyenne'}
+                                </span>
+                              </div>
+                              {impact && <span className="text-xs text-slate-600 font-medium">📊 Impact: {impact}</span>}
+                            </div>
+                            <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
                           </div>
-                          <div className="flex-1">
-                            <span className="text-sm text-slate-700 font-medium leading-relaxed block">{text}</span>
-                            {impact && <span className="text-xs text-slate-500 mt-1 block">Impact: {impact}</span>}
-                          </div>
-                        </div>
+                          
+                          {isExpanded && (description || solution || benefit) && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="pl-10 pr-2 space-y-3 border-t border-slate-200/50 pt-3 mt-1"
+                            >
+                              {description && (
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                    <Info className="w-4 h-4 text-blue-600" />
+                                    <span className="text-xs font-bold text-slate-700">Pourquoi c'est important</span>
+                                  </div>
+                                  <p className="text-xs text-slate-600 leading-relaxed">{description}</p>
+                                </div>
+                              )}
+                              
+                              {solution && (
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                    <Code2 className="w-4 h-4 text-purple-600" />
+                                    <span className="text-xs font-bold text-slate-700">Comment corriger</span>
+                                  </div>
+                                  <p className="text-xs text-slate-600 leading-relaxed">{solution}</p>
+                                </div>
+                              )}
+                              
+                              {benefit && (
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                    <TrendingUp className="w-4 h-4 text-emerald-600" />
+                                    <span className="text-xs font-bold text-slate-700">Bénéfices attendus</span>
+                                  </div>
+                                  <p className="text-xs text-slate-600 leading-relaxed">{benefit}</p>
+                                </div>
+                              )}
+                            </motion.div>
+                          )}
+                        </motion.div>
                       );
                     }}
                     emptyMessage="Aucune recommandation"

@@ -525,20 +525,38 @@ async function analyzeWebsite(url) {
   const finalTechStack = techStack.slice(0, 20);
 
 
-  // === ANALYSE DE SÉCURITÉ ULTRA-AVANCÉE ===
+  // === ANALYSE DE SÉCURITÉ ULTRA-AVANCÉE V2 ===
   const vulnerabilities = [];
   const vulnerabilitiesList = [];
-  let securityScore = 100; // On part de 100 et on retire des points
   
-  // 1. HTTPS/TLS (Critique - 30 points)
+  // Catégories de tests de sécurité avec scoring détaillé
+  const securityTests = {
+    transport: { score: 0, max: 25, tests: [], passed: 0, failed: 0 },
+    headers: { score: 0, max: 30, tests: [], passed: 0, failed: 0 },
+    content: { score: 0, max: 20, tests: [], passed: 0, failed: 0 },
+    cookies: { score: 0, max: 10, tests: [], passed: 0, failed: 0 },
+    vulnerabilities: { score: 0, max: 15, tests: [], passed: 0, failed: 0 }
+  };
+  
+  // ========== 1. SÉCURITÉ DU TRANSPORT (25 points) ==========
+  
+  // 1.1 HTTPS/TLS (15 points)
   if (!https) {
-    vulnerabilities.push({ severity: 'critical', issue: 'Pas de HTTPS', impact: 'Données non chiffrées, interception possible' });
+    vulnerabilities.push({ severity: 'critical', issue: 'Pas de HTTPS', impact: 'Données non chiffrées' });
     vulnerabilitiesList.push({ 
       severity: 'High', 
-      title: 'HTTPS non activé', 
-      description: 'Le site n\'utilise pas HTTPS. Toutes les données transitent en clair et peuvent être interceptées.' 
+      title: '🔓 HTTPS non activé', 
+      description: 'Le site n\'utilise pas HTTPS. Toutes les données transitent en clair et peuvent être interceptées par des attaquants (attaque Man-in-the-Middle).',
+      cve: 'CWE-319',
+      risk: 'Critique',
+      remediation: 'Obtenez un certificat SSL/TLS gratuit via Let\'s Encrypt'
     });
-    securityScore -= 30;
+    securityTests.transport.tests.push({ name: 'HTTPS', passed: false, points: 0, max: 15 });
+    securityTests.transport.failed++;
+  } else {
+    securityTests.transport.score += 15;
+    securityTests.transport.tests.push({ name: 'HTTPS', passed: true, points: 15, max: 15 });
+    securityTests.transport.passed++;
   }
   
   // 2. HSTS - HTTP Strict Transport Security (15 points)
@@ -1430,39 +1448,263 @@ async function analyzeWebsite(url) {
   const recommendations = [];
   
   // Sécurité critique
-  if (!https) recommendations.push({ priority: 'critical', text: 'Activez HTTPS immédiatement', impact: 'Sécurité' });
-  if (mixedContent) recommendations.push({ priority: 'critical', text: 'Corrigez le contenu mixte (HTTP dans HTTPS)', impact: 'Sécurité' });
+  if (!https) {
+    recommendations.push({ 
+      priority: 'critical', 
+      text: 'Activez HTTPS immédiatement', 
+      impact: 'Sécurité',
+      description: 'Le protocole HTTPS chiffre les données échangées entre le navigateur et le serveur, protégeant ainsi les informations sensibles (mots de passe, données bancaires). Sans HTTPS, votre site est vulnérable aux attaques man-in-the-middle et Google pénalise votre référencement.',
+      solution: 'Obtenez un certificat SSL/TLS gratuit via Let\'s Encrypt ou votre hébergeur, puis configurez votre serveur pour rediriger automatiquement HTTP vers HTTPS.',
+      benefit: 'Protection des données utilisateurs, meilleur référencement Google (+5-10% de trafic), confiance accrue des visiteurs'
+    });
+  }
+  
+  if (mixedContent) {
+    recommendations.push({ 
+      priority: 'critical', 
+      text: 'Corrigez le contenu mixte (HTTP dans HTTPS)', 
+      impact: 'Sécurité',
+      description: 'Votre site HTTPS charge des ressources (images, scripts, CSS) en HTTP non sécurisé. Les navigateurs modernes bloquent ce contenu mixte, cassant potentiellement votre design ou fonctionnalités.',
+      solution: 'Remplacez tous les liens HTTP par HTTPS dans votre code HTML, CSS et JavaScript. Utilisez des URLs relatives (/images/logo.png) ou le protocole relatif (//example.com/script.js).',
+      benefit: 'Élimination des avertissements de sécurité, affichage correct du site, maintien de la sécurité HTTPS'
+    });
+  }
   
   // SEO prioritaire
-  if (!hasViewport) recommendations.push({ priority: 'high', text: 'Ajoutez une meta viewport', impact: 'Mobile' });
-  if (!metaDescription) recommendations.push({ priority: 'high', text: 'Ajoutez une meta description', impact: 'SEO' });
-  if (h1Count === 0) recommendations.push({ priority: 'high', text: 'Ajoutez une balise H1', impact: 'SEO' });
-  if (h1Count > 1) recommendations.push({ priority: 'medium', text: 'Limitez-vous à une seule H1', impact: 'SEO' });
-  if (!hasCanonical) recommendations.push({ priority: 'medium', text: 'Ajoutez une URL canonique', impact: 'SEO' });
-  if (structuredData === 0) recommendations.push({ priority: 'medium', text: 'Ajoutez des données structurées (Schema.org)', impact: 'SEO' });
+  if (!hasViewport) {
+    recommendations.push({ 
+      priority: 'high', 
+      text: 'Ajoutez une meta viewport', 
+      impact: 'Mobile',
+      description: 'Sans balise viewport, votre site s\'affiche comme sur desktop sur mobile, obligeant les utilisateurs à zoomer. Google pénalise fortement les sites non mobile-friendly dans les résultats de recherche mobile.',
+      solution: 'Ajoutez <meta name="viewport" content="width=device-width, initial-scale=1.0"> dans la section <head> de votre HTML.',
+      benefit: 'Affichage optimal sur mobile, meilleur classement Google Mobile-First, réduction du taux de rebond mobile (-30%)'
+    });
+  }
+  
+  if (!metaDescription) {
+    recommendations.push({ 
+      priority: 'high', 
+      text: 'Ajoutez une meta description', 
+      impact: 'SEO',
+      description: 'La meta description apparaît dans les résultats Google sous le titre. Sans elle, Google génère automatiquement un extrait souvent peu pertinent, réduisant votre taux de clic.',
+      solution: 'Ajoutez <meta name="description" content="Description attractive de 150-160 caractères"> dans le <head>. Incluez vos mots-clés principaux naturellement.',
+      benefit: 'Augmentation du taux de clic Google (+15-20%), meilleur contrôle de votre image dans les résultats de recherche'
+    });
+  }
+  
+  if (h1Count === 0) {
+    recommendations.push({ 
+      priority: 'high', 
+      text: 'Ajoutez une balise H1', 
+      impact: 'SEO',
+      description: 'Le H1 est le titre principal de votre page, crucial pour le SEO. Google l\'utilise pour comprendre le sujet de votre page. Son absence nuit gravement à votre référencement.',
+      solution: 'Ajoutez une balise <h1>Titre principal de votre page</h1> unique par page, contenant vos mots-clés principaux.',
+      benefit: 'Meilleur référencement Google, structure claire pour les lecteurs et moteurs de recherche'
+    });
+  }
+  
+  if (h1Count > 1) {
+    recommendations.push({ 
+      priority: 'medium', 
+      text: 'Limitez-vous à une seule H1', 
+      impact: 'SEO',
+      description: `Votre page contient ${h1Count} balises H1. Bien que techniquement valide en HTML5, avoir plusieurs H1 dilue l\'importance SEO et crée de la confusion pour les moteurs de recherche sur le sujet principal.`,
+      solution: 'Gardez un seul H1 pour le titre principal, utilisez H2 pour les sous-sections et H3 pour les sous-sous-sections.',
+      benefit: 'Signal SEO plus fort, hiérarchie claire, meilleure compréhension par Google du sujet principal'
+    });
+  }
+  
+  if (!hasCanonical) {
+    recommendations.push({ 
+      priority: 'medium', 
+      text: 'Ajoutez une URL canonique', 
+      impact: 'SEO',
+      description: 'Sans URL canonique, Google peut indexer plusieurs versions de votre page (avec/sans www, avec/sans trailing slash), diluant votre autorité SEO et créant du contenu dupliqué.',
+      solution: 'Ajoutez <link rel="canonical" href="https://votresite.com/page-exacte"> dans le <head> pour indiquer la version préférée.',
+      benefit: 'Évite les pénalités de contenu dupliqué, consolide l\'autorité SEO sur une seule URL'
+    });
+  }
+  
+  if (structuredData === 0) {
+    recommendations.push({ 
+      priority: 'medium', 
+      text: 'Ajoutez des données structurées (Schema.org)', 
+      impact: 'SEO',
+      description: 'Les données structurées permettent à Google d\'afficher des rich snippets (étoiles, prix, disponibilité) dans les résultats, augmentant drastiquement votre visibilité et taux de clic.',
+      solution: 'Implémentez le balisage JSON-LD Schema.org adapté à votre contenu (Article, Product, LocalBusiness, etc.). Utilisez l\'outil de test de Google pour valider.',
+      benefit: 'Rich snippets dans Google (+30% de CTR), meilleure compréhension de votre contenu par les moteurs'
+    });
+  }
   
   // Accessibilité
-  if (imagesWithoutAlt > 0) recommendations.push({ priority: 'medium', text: `Ajoutez des attributs alt aux ${imagesWithoutAlt} images`, impact: 'Accessibilité' });
-  if (linksWithoutText > 0) recommendations.push({ priority: 'medium', text: `${linksWithoutText} liens sans texte détectés`, impact: 'Accessibilité' });
-  if (!headingHierarchyValid) recommendations.push({ priority: 'medium', text: 'Corrigez la hiérarchie des titres (H1→H2→H3)', impact: 'Accessibilité' });
+  if (imagesWithoutAlt > 0) {
+    recommendations.push({ 
+      priority: 'medium', 
+      text: `Ajoutez des attributs alt aux ${imagesWithoutAlt} images`, 
+      impact: 'Accessibilité',
+      description: `${imagesWithoutAlt} images n'ont pas d'attribut alt. Les lecteurs d'écran ne peuvent pas les décrire aux utilisateurs malvoyants, et Google ne peut pas les indexer correctement.`,
+      solution: 'Ajoutez alt="Description précise de l\'image" à chaque <img>. Pour les images décoratives, utilisez alt="" (vide).',
+      benefit: 'Accessibilité pour 15% de la population, meilleur référencement images Google, conformité légale (RGAA)'
+    });
+  }
+  
+  if (linksWithoutText > 0) {
+    recommendations.push({ 
+      priority: 'medium', 
+      text: `${linksWithoutText} liens sans texte détectés`, 
+      impact: 'Accessibilité',
+      description: 'Des liens sans texte visible (icônes seules) sont inaccessibles aux lecteurs d\'écran. Les utilisateurs malvoyants ne savent pas où mènent ces liens.',
+      solution: 'Ajoutez aria-label="Description du lien" aux liens icônes, ou incluez du texte visible avec les icônes.',
+      benefit: 'Navigation accessible à tous, conformité WCAG 2.1, meilleure expérience utilisateur'
+    });
+  }
+  
+  if (!headingHierarchyValid) {
+    recommendations.push({ 
+      priority: 'medium', 
+      text: 'Corrigez la hiérarchie des titres (H1→H2→H3)', 
+      impact: 'Accessibilité',
+      description: 'Votre hiérarchie de titres saute des niveaux (ex: H1 puis H3 sans H2). Cela désoriente les utilisateurs de lecteurs d\'écran qui naviguent par titres.',
+      solution: 'Respectez l\'ordre logique: H1 (titre principal) → H2 (sections) → H3 (sous-sections) → H4, etc. Ne sautez jamais de niveau.',
+      benefit: 'Navigation facilitée pour 15% des utilisateurs, meilleur SEO, structure logique claire'
+    });
+  }
   
   // Sécurité
-  if (!securityHeaders.contentSecurityPolicy) recommendations.push({ priority: 'medium', text: 'Ajoutez un Content-Security-Policy', impact: 'Sécurité' });
-  if (!hasSubresourceIntegrity && externalScripts > 0) recommendations.push({ priority: 'medium', text: 'Ajoutez SRI pour les scripts externes', impact: 'Sécurité' });
-  if (!hasSecureCookies && cookieInfo) recommendations.push({ priority: 'medium', text: 'Sécurisez vos cookies (Secure, HttpOnly)', impact: 'Sécurité' });
+  if (!securityHeaders.contentSecurityPolicy) {
+    recommendations.push({ 
+      priority: 'medium', 
+      text: 'Ajoutez un Content-Security-Policy', 
+      impact: 'Sécurité',
+      description: 'Sans CSP, votre site est vulnérable aux attaques XSS (Cross-Site Scripting). Un attaquant peut injecter du code malveillant qui s\'exécutera dans le navigateur de vos utilisateurs.',
+      solution: 'Configurez l\'en-tête HTTP Content-Security-Policy pour définir les sources autorisées de scripts, styles, images, etc.',
+      benefit: 'Protection contre 80% des attaques XSS, sécurité renforcée, conformité PCI-DSS pour e-commerce'
+    });
+  }
+  
+  if (!hasSubresourceIntegrity && externalScripts > 0) {
+    recommendations.push({ 
+      priority: 'medium', 
+      text: 'Ajoutez SRI pour les scripts externes', 
+      impact: 'Sécurité',
+      description: `Vous chargez ${externalScripts} scripts externes sans vérification d'intégrité. Si un CDN est compromis, du code malveillant pourrait être injecté dans votre site.`,
+      solution: 'Ajoutez l\'attribut integrity="sha384-..." aux balises <script> et <link> externes. Générez les hash avec srihash.org.',
+      benefit: 'Protection contre les CDN compromis, détection automatique de modifications malveillantes'
+    });
+  }
+  
+  if (!hasSecureCookies && cookieInfo) {
+    recommendations.push({ 
+      priority: 'medium', 
+      text: 'Sécurisez vos cookies (Secure, HttpOnly)', 
+      impact: 'Sécurité',
+      description: 'Vos cookies ne sont pas sécurisés. Sans les flags Secure et HttpOnly, ils peuvent être interceptés (attaque man-in-the-middle) ou volés via JavaScript (attaque XSS).',
+      solution: 'Configurez vos cookies avec les flags Secure (HTTPS uniquement), HttpOnly (inaccessible en JS) et SameSite=Strict.',
+      benefit: 'Protection des sessions utilisateurs, prévention du vol de cookies, conformité RGPD'
+    });
+  }
   
   // Performance
-  if (blockingScripts > 5) recommendations.push({ priority: 'medium', text: `${blockingScripts} scripts bloquants détectés - utilisez async/defer`, impact: 'Performance' });
-  if (!hasCompression) recommendations.push({ priority: 'medium', text: 'Activez la compression Gzip/Brotli', impact: 'Performance' });
-  if (lazyLoadImages === 0 && imageCount > 5) recommendations.push({ priority: 'medium', text: 'Activez le lazy loading pour les images', impact: 'Performance' });
-  if (inlineStyles > 10) recommendations.push({ priority: 'low', text: 'Réduisez les styles inline', impact: 'Performance' });
-  if (scriptCount > 15) recommendations.push({ priority: 'medium', text: 'Optimisez le nombre de scripts', impact: 'Performance' });
+  if (blockingScripts > 5) {
+    recommendations.push({ 
+      priority: 'medium', 
+      text: `${blockingScripts} scripts bloquants détectés - utilisez async/defer`, 
+      impact: 'Performance',
+      description: `${blockingScripts} scripts bloquent le rendu de votre page. Le navigateur doit télécharger et exécuter chaque script avant d'afficher le contenu, ralentissant drastiquement le chargement.`,
+      solution: 'Ajoutez defer aux scripts non critiques (<script defer src="...">) ou async pour les scripts indépendants. Placez les scripts en fin de <body>.',
+      benefit: 'Temps de chargement réduit de 30-50%, meilleur score Google PageSpeed, expérience utilisateur améliorée'
+    });
+  }
+  
+  if (!hasCompression) {
+    recommendations.push({ 
+      priority: 'medium', 
+      text: 'Activez la compression Gzip/Brotli', 
+      impact: 'Performance',
+      description: 'Votre serveur n\'envoie pas de contenu compressé. Les fichiers HTML, CSS et JS sont transférés en taille réelle, gaspillant de la bande passante et ralentissant le chargement.',
+      solution: 'Activez la compression Gzip (ou mieux, Brotli) sur votre serveur web (Apache, Nginx, etc.). La plupart des hébergeurs l\'activent via un simple paramètre.',
+      benefit: 'Réduction de 70-80% de la taille des fichiers, chargement 3-4x plus rapide, économie de bande passante'
+    });
+  }
+  
+  if (lazyLoadImages === 0 && imageCount > 5) {
+    recommendations.push({ 
+      priority: 'medium', 
+      text: 'Activez le lazy loading pour les images', 
+      impact: 'Performance',
+      description: `Vos ${imageCount} images se chargent toutes immédiatement, même celles hors écran. Cela ralentit le chargement initial et gaspille de la bande passante pour des images non vues.`,
+      solution: 'Ajoutez loading="lazy" à vos balises <img> pour charger les images uniquement quand l\'utilisateur scrolle vers elles.',
+      benefit: 'Chargement initial 40-60% plus rapide, économie de données mobile, meilleur Core Web Vitals'
+    });
+  }
+  
+  if (inlineStyles > 10) {
+    recommendations.push({ 
+      priority: 'low', 
+      text: 'Réduisez les styles inline', 
+      impact: 'Performance',
+      description: `${inlineStyles} éléments utilisent des styles inline (style="..."). Cela empêche la mise en cache CSS, augmente la taille HTML et complique la maintenance.`,
+      solution: 'Déplacez les styles inline vers des classes CSS dans un fichier externe. Gardez inline uniquement les styles critiques above-the-fold.',
+      benefit: 'Meilleure mise en cache, HTML plus léger, maintenance simplifiée, séparation contenu/présentation'
+    });
+  }
+  
+  if (scriptCount > 15) {
+    recommendations.push({ 
+      priority: 'medium', 
+      text: 'Optimisez le nombre de scripts', 
+      impact: 'Performance',
+      description: `Votre page charge ${scriptCount} fichiers JavaScript. Chaque fichier nécessite une requête HTTP, ralentissant le chargement même avec HTTP/2.`,
+      solution: 'Regroupez vos scripts en un seul bundle avec Webpack/Vite. Supprimez les scripts inutilisés. Utilisez le code splitting pour charger uniquement le nécessaire.',
+      benefit: 'Réduction de 50-70% du temps de chargement, moins de requêtes réseau, meilleur Time to Interactive'
+    });
+  }
   
   // UX/Design
-  if (semanticElements < 3) recommendations.push({ priority: 'low', text: 'Utilisez plus d\'éléments sémantiques HTML5', impact: 'SEO' });
-  if (!hasOpenGraph) recommendations.push({ priority: 'low', text: 'Ajoutez des balises Open Graph', impact: 'Réseaux sociaux' });
-  if (!hasMediaQueries && hasViewport) recommendations.push({ priority: 'low', text: 'Ajoutez des media queries pour le responsive', impact: 'Mobile' });
-  if (ctaButtons === 0 && forms === 0) recommendations.push({ priority: 'low', text: 'Ajoutez des appels à l\'action (CTA)', impact: 'Conversion' });
+  if (semanticElements < 3) {
+    recommendations.push({ 
+      priority: 'low', 
+      text: 'Utilisez plus d\'éléments sémantiques HTML5', 
+      impact: 'SEO',
+      description: `Votre page utilise peu d'éléments sémantiques (<header>, <nav>, <main>, <article>, <footer>). Vous utilisez probablement trop de <div>, rendant votre structure moins claire.`,
+      solution: 'Remplacez les <div> génériques par des balises sémantiques appropriées: <header> pour l\'en-tête, <nav> pour la navigation, <main> pour le contenu principal, etc.',
+      benefit: 'Meilleur SEO, accessibilité améliorée, code plus maintenable, compréhension facilitée par les moteurs'
+    });
+  }
+  
+  if (!hasOpenGraph) {
+    recommendations.push({ 
+      priority: 'low', 
+      text: 'Ajoutez des balises Open Graph', 
+      impact: 'Réseaux sociaux',
+      description: 'Sans balises Open Graph, vos liens partagés sur Facebook, LinkedIn, Twitter affichent un aperçu générique peu attractif, réduisant drastiquement l\'engagement.',
+      solution: 'Ajoutez les meta Open Graph dans le <head>: og:title, og:description, og:image (1200x630px), og:url. Testez avec le Facebook Debugger.',
+      benefit: 'Partages sociaux 3x plus attractifs, augmentation de 40% du taux de clic, meilleure viralité'
+    });
+  }
+  
+  if (!hasMediaQueries && hasViewport) {
+    recommendations.push({ 
+      priority: 'low', 
+      text: 'Ajoutez des media queries pour le responsive', 
+      impact: 'Mobile',
+      description: 'Vous avez une balise viewport mais aucune media query CSS. Votre design ne s\'adapte probablement pas correctement aux différentes tailles d\'écran.',
+      solution: 'Utilisez @media (max-width: 768px) {} dans votre CSS pour adapter le design mobile, tablette et desktop.',
+      benefit: 'Expérience optimale sur tous appareils, réduction du taux de rebond mobile, meilleur classement Google'
+    });
+  }
+  
+  if (ctaButtons === 0 && forms === 0) {
+    recommendations.push({ 
+      priority: 'low', 
+      text: 'Ajoutez des appels à l\'action (CTA)', 
+      impact: 'Conversion',
+      description: 'Votre page ne contient aucun bouton d\'action ni formulaire. Les visiteurs ne savent pas quelle action effectuer, réduisant drastiquement vos conversions.',
+      solution: 'Ajoutez des boutons CTA clairs ("Acheter maintenant", "Demander un devis", "S\'inscrire") avec des couleurs contrastées et un placement stratégique.',
+      benefit: 'Augmentation de 200-300% du taux de conversion, objectifs clairs pour les visiteurs, meilleur ROI'
+    });
+  }
 
   // === SCORE GLOBAL ===
   const overallScore = Math.round((securityScore * 0.3) + (uxScore * 0.5) + (devScore * 0.2));
