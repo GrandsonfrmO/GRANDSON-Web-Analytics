@@ -41,3 +41,98 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Media Queries pour le Responsive */
+@media (max-width: 640px) {
+  /* Mobile: Optimisation des espacements */
+  body {
+    font-size: 14px;
+  }
+  
+  /* Réduction des paddings sur mobile */
+  .max-w-7xl {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  /* Tablette: Tailles intermédiaires */
+  body {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Tablette large / Petit desktop */
+  .max-w-7xl {
+    max-width: 90%;
+  }
+}
+
+@media (min-width: 1025px) {
+  /* Desktop: Optimisation pour grands écrans */
+  .max-w-7xl {
+    max-width: 1280px;
+  }
+}
+
+/* Media Query pour mode sombre (si l'utilisateur préfère) */
+@media (prefers-color-scheme: dark) {
+  /* Optionnel: Support du mode sombre */
+  /* Décommentez si vous voulez activer le mode sombre
+  body {
+    background-color: #0f172a;
+    color: #f8fafc;
+  }
+  */
+}
+
+/* Media Query pour réduire les animations si préférence utilisateur */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Media Query pour impression */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  header,
+  button,
+  .no-print {
+    display: none !important;
+  }
+  
+  main {
+    padding: 0;
+    max-width: 100%;
+  }
+}
+
+/* Optimisation pour écrans haute résolution (Retina) */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  body {
+    -webkit-font-smoothing: subpixel-antialiased;
+  }
+}
+
+/* Orientation paysage sur mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  header {
+    height: 3.5rem;
+  }
+  
+  main {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+}

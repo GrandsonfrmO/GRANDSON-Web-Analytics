@@ -299,9 +299,9 @@ export default function App() {
                 </div>
               </div>
               <div className="flex flex-col">
-                <h1 id="logo-text-fallback" className="hidden text-lg sm:text-xl font-black tracking-tight text-slate-900 leading-none">
+                <div id="logo-text-fallback" className="hidden text-lg sm:text-xl font-black tracking-tight text-slate-900 leading-none">
                   GRANDSON
-                </h1>
+                </div>
                 <span className="text-[10px] sm:text-xs font-semibold text-slate-500 tracking-widest uppercase mt-0.5">
                   Web Analytics
                 </span>
@@ -338,20 +338,22 @@ export default function App() {
       )}>
         {/* Mode Comparaison */}
         {compareMode ? (
-          <CompareMode />
+          <section aria-label="Mode comparaison">
+            <CompareMode />
+          </section>
         ) : (
           <>
         {/* Search Section */}
-        <div id="search" className={cn(
+        <section id="search" aria-label="Recherche et analyse" className={cn(
           "w-full mx-auto transition-all duration-500",
           (!result && !loading) ? "max-w-4xl text-center" : "max-w-3xl text-center mb-8 sm:mb-12"
         )}>
-          <h2 className={cn(
+          <h1 className={cn(
             "font-black tracking-tighter text-slate-900 transition-all duration-500",
             (!result && !loading) ? "text-5xl sm:text-6xl lg:text-7xl mb-4 sm:mb-6" : "text-3xl sm:text-5xl mb-3 sm:mb-4"
           )}>
             Analysez l'ADN de <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600">votre site web</span>
-          </h2>
+          </h1>
           <p className={cn(
             "text-slate-600 transition-all duration-500 font-medium",
             (!result && !loading) ? "text-lg sm:text-2xl mb-10 sm:mb-14 max-w-2xl mx-auto leading-relaxed" : "text-base sm:text-lg mb-6 sm:mb-8"
@@ -529,18 +531,34 @@ export default function App() {
                         Prenez-les comme un signal d'alarme intelligent, pas comme une vérité absolue !
                       </p>
                     </div>
+                    
+                    {/* Mini CTA */}
+                    <div className="mt-6 pt-6 border-t border-amber-200">
+                      <p className="text-sm text-slate-600 text-center mb-4">
+                        Besoin d'un audit professionnel avec validation humaine ?
+                      </p>
+                      <div className="flex justify-center">
+                        <a 
+                          href="mailto:contact@grandson-analytics.com?subject=Demande d'audit professionnel"
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                        >
+                          <Award className="w-4 h-4" />
+                          <span>Demander un audit expert</span>
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               )}
             </motion.div>
           )}
-        </div>
+        </section>
 
         {/* Loading State */}
         {loading && (
-          <div className="w-full max-w-2xl mx-auto mt-12">
+          <section aria-label="Chargement" className="w-full max-w-2xl mx-auto mt-12">
             <LoadingAnimation stage="analyzing" />
-          </div>
+          </section>
         )}
 
         {/* Results Dashboard - Bento Grid */}
@@ -1185,6 +1203,65 @@ export default function App() {
                 )}
               </BentoCard>
 
+              {/* CTA Card - Besoin d'aide pour améliorer votre site */}
+              <motion.div 
+                variants={itemVariants}
+                className="md:col-span-2 lg:col-span-3 relative bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 rounded-[2rem] p-8 sm:p-12 overflow-hidden shadow-xl"
+              >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full -ml-20 -mb-20 blur-3xl"></div>
+                
+                <div className="relative z-10 text-center max-w-3xl mx-auto">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl mb-6">
+                    <Lightbulb className="w-8 h-8 text-white" />
+                  </div>
+                  
+                  <h3 className="text-3xl sm:text-4xl font-black text-white mb-4 tracking-tight">
+                    Besoin d'aide pour améliorer votre site ?
+                  </h3>
+                  
+                  <p className="text-lg text-white/90 mb-8 leading-relaxed">
+                    Notre équipe d'experts peut vous aider à corriger les problèmes détectés et optimiser votre site pour de meilleures performances, sécurité et SEO.
+                  </p>
+                  
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a 
+                      href="mailto:contact@grandson-analytics.com?subject=Demande d'audit personnalisé"
+                      className="inline-flex items-center gap-2 px-8 py-4 bg-white text-orange-600 font-bold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+                    >
+                      <span>Demander un audit personnalisé</span>
+                      <ChevronRight className="w-5 h-5" />
+                    </a>
+                    
+                    <button 
+                      onClick={() => {
+                        setUrl('');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-bold rounded-2xl border-2 border-white/30 hover:bg-white/20 transition-all"
+                    >
+                      <Search className="w-5 h-5" />
+                      <span>Analyser un autre site</span>
+                    </button>
+                  </div>
+                  
+                  <div className="mt-8 flex items-center justify-center gap-8 text-white/80 text-sm">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span>Réponse sous 24h</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span>Devis gratuit</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span>Sans engagement</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
               {/* Full History Section with Infinite Scroll */}
               {history.length > 0 && (
                 <BentoCard 
@@ -1271,8 +1348,69 @@ export default function App() {
         )}
       </main>
 
+      {/* Footer */}
+      <footer className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-t border-slate-700 mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {/* CTA Section */}
+          <div className="text-center mb-12 pb-12 border-b border-slate-700">
+            <h3 className="text-2xl sm:text-3xl font-black text-white mb-4">
+              Prêt à optimiser votre site web ?
+            </h3>
+            <p className="text-slate-300 mb-6 max-w-2xl mx-auto">
+              Obtenez un audit complet et des recommandations personnalisées pour améliorer votre présence en ligne.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button 
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+              >
+                <Zap className="w-5 h-5" />
+                <span>Analyser mon site maintenant</span>
+              </button>
+              
+              <a 
+                href="mailto:contact@grandson-analytics.com"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-bold rounded-2xl border-2 border-white/20 hover:bg-white/20 transition-all"
+              >
+                <span>Nous contacter</span>
+                <ChevronRight className="w-5 h-5" />
+              </a>
+            </div>
+          </div>
+          
+          {/* Footer Links */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Globe className="w-5 h-5 text-slate-400" />
+              <p className="text-sm text-slate-400">
+                © 2024 <span className="font-bold text-white">GRANDSON Web Analytics</span>. Tous droits réservés.
+              </p>
+            </div>
+            <nav aria-label="Footer navigation">
+              <ul className="flex items-center gap-6 text-sm">
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-amber-500 transition-colors font-medium">
+                    À propos
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-amber-500 transition-colors font-medium">
+                    Confidentialité
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-slate-400 hover:text-amber-500 transition-colors font-medium">
+                    Contact
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </footer>
+
       {/* Bottom Navigation (Mobile Only) */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 z-50 md:hidden pb-[env(safe-area-inset-bottom)]">
+      <nav aria-label="Navigation mobile" className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200 z-50 md:hidden pb-[env(safe-area-inset-bottom)]">
         <div className="flex items-center justify-around h-16 px-2">
           <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex flex-col items-center justify-center w-full h-full text-slate-500 hover:text-amber-600 active:text-amber-600 transition-colors">
             <Search className="w-5 h-5 mb-1" />
@@ -1291,7 +1429,7 @@ export default function App() {
             <span className="text-[10px] font-medium">Historique</span>
           </button>
         </div>
-      </div>
+      </nav>
     </div>
   );
 }

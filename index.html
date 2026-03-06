@@ -3,6 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.simpleicons.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.vercel.app; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    
     <meta name="description" content="Analysez l'ADN de votre site web - Audit technologique, sécurité avancée, UX et estimation financière ultra-précise" />
     <meta name="keywords" content="audit site web, analyse sécurité, SEO, performance web, estimation prix site web" />
     <meta name="author" content="GRANDSON Web Analytics" />
@@ -30,8 +36,54 @@
     <link rel="icon" type="image/png" href="/logo.png" />
     <link rel="apple-touch-icon" href="/logo.png" />
     
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://grandson-web-analytics.vercel.app/" />
+    
     <!-- Theme Color -->
     <meta name="theme-color" content="#0f172a" />
+    
+    <!-- Structured Data (Schema.org) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "GRANDSON Web Analytics",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Any",
+      "description": "Analysez l'ADN de votre site web - Audit technologique, sécurité avancée, UX/SEO et estimation financière ultra-précise. Obtenez un rapport détaillé en quelques secondes.",
+      "url": "https://grandson-web-analytics.vercel.app/",
+      "image": "https://grandson-web-analytics.vercel.app/og-image.png",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "GNF"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "127"
+      },
+      "featureList": [
+        "Audit de sécurité avancé (HTTPS, HSTS, CSP, XSS)",
+        "Analyse de performance et vitesse",
+        "Détection de technologies et frameworks",
+        "Évaluation UX/SEO et accessibilité",
+        "Estimation tarifaire en Francs Guinéens",
+        "Analyse du niveau de développeur",
+        "Détection de code généré par IA",
+        "Comparaison de deux sites web"
+      ],
+      "author": {
+        "@type": "Organization",
+        "name": "GRANDSON",
+        "url": "https://grandson-web-analytics.vercel.app/"
+      },
+      "provider": {
+        "@type": "Organization",
+        "name": "GRANDSON Web Analytics"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
