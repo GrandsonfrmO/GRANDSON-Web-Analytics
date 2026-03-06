@@ -314,7 +314,7 @@ export default function App() {
               <div className="relative flex items-center justify-center h-10 sm:h-12 w-auto transition-transform group-hover:scale-105">
                 {/* We use an img tag for the uploaded logo. If it fails to load, we show a fallback. */}
                 <img 
-                  src="/logo.png" 
+                  src="/logo.PNG" 
                   alt="Grandson Logo" 
                   className="h-full w-auto object-contain drop-shadow-sm"
                   onError={(e) => {
@@ -325,8 +325,8 @@ export default function App() {
                     if (textFallback) textFallback.classList.remove('hidden');
                   }}
                 />
-                <div id="logo-fallback" className="hidden flex items-center justify-center p-2 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-lg">
-                  <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                <div id="logo-fallback" className="hidden flex items-center justify-center p-2 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl shadow-lg">
+                  <Gauge className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
               </div>
               <div className="flex flex-col">
