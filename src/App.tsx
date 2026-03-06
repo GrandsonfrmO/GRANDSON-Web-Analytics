@@ -1444,61 +1444,51 @@ export default function App() {
 
       {/* Footer */}
       <footer className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-t border-slate-700 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* CTA Section */}
-          <div className="text-center mb-12 pb-12 border-b border-slate-700">
-            <h3 className="text-2xl sm:text-3xl font-black text-white mb-4">
-              Prêt à optimiser votre site web ?
-            </h3>
-            <p className="text-slate-300 mb-6 max-w-2xl mx-auto">
-              Obtenez un audit complet et des recommandations personnalisées pour améliorer votre présence en ligne.
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <div className="flex flex-col items-center justify-center gap-3 sm:gap-4 text-center">
+            {/* Logo */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <img 
+                src="/logo.PNG" 
+                alt="Grandson Logo" 
+                className="h-8 sm:h-10 w-auto object-contain"
+              />
+              <div className="flex flex-col items-start">
+                <span className="text-base sm:text-lg font-black text-white leading-none">
+                  GRANDSON
+                </span>
+                <span className="text-[10px] sm:text-xs font-semibold text-slate-400 tracking-widest uppercase">
+                  Web Analytics
+                </span>
+              </div>
+            </div>
+
+            {/* Created by */}
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-slate-300">
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-medium">
+                  CREATED BY
+                </span>
+                <span className="text-sm sm:text-base font-black text-white">
+                  GRANDSON PROJECT
+                </span>
+              </div>
+              <span className="hidden sm:inline text-slate-600">•</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm font-medium">
+                  MADE IN
+                </span>
+                <span className="text-sm sm:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-yellow-500 to-green-500">
+                  GUINEA
+                </span>
+                <span className="text-lg">🇬🇳</span>
+              </div>
+            </div>
+
+            {/* Copyright */}
+            <p className="text-xs sm:text-sm text-slate-500 mt-2">
+              © 2024 GRANDSON. Tous droits réservés.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button 
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
-              >
-                <Zap className="w-5 h-5" />
-                <span>Analyser mon site maintenant</span>
-              </button>
-              
-              <a 
-                href="mailto:contact@grandson-analytics.com"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-bold rounded-2xl border-2 border-white/20 hover:bg-white/20 transition-all"
-              >
-                <span>Nous contacter</span>
-                <ChevronRight className="w-5 h-5" />
-              </a>
-            </div>
-          </div>
-          
-          {/* Footer Links */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Globe className="w-5 h-5 text-slate-400" />
-              <p className="text-sm text-slate-400">
-                © 2024 <span className="font-bold text-white">GRANDSON Web Analytics</span>. Tous droits réservés.
-              </p>
-            </div>
-            <nav aria-label="Footer navigation">
-              <ul className="flex items-center gap-6 text-sm">
-                <li>
-                  <a href="#" className="text-slate-400 hover:text-amber-500 transition-colors font-medium">
-                    À propos
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-slate-400 hover:text-amber-500 transition-colors font-medium">
-                    Confidentialité
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-slate-400 hover:text-amber-500 transition-colors font-medium">
-                    Contact
-                  </a>
-                </li>
-              </ul>
-            </nav>
           </div>
         </div>
       </footer>
