@@ -528,6 +528,7 @@ async function analyzeWebsite(url) {
   // === ANALYSE DE SÉCURITÉ ULTRA-AVANCÉE V2 ===
   const vulnerabilities = [];
   const vulnerabilitiesList = [];
+  let securityScore = 100; // On part de 100 et on retire des points
   
   // Catégories de tests de sécurité avec scoring détaillé
   const securityTests = {

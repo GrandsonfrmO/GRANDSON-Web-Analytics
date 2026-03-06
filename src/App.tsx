@@ -330,7 +330,7 @@ export default function App() {
                 </div>
               </div>
               <div className="flex flex-col">
-                <div id="logo-text-fallback" className="hidden text-lg sm:text-xl font-black tracking-tight text-slate-900 leading-none">
+                <div className="text-base sm:text-lg font-black tracking-tight text-slate-900 leading-none">
                   GRANDSON
                 </div>
                 <span className="text-[10px] sm:text-xs font-semibold text-slate-500 tracking-widest uppercase mt-0.5">
