@@ -20,7 +20,7 @@
     vulnerabilities.push({ severity: 'critical', issue: 'Pas de HTTPS', impact: 'Données non chiffrées' });
     vulnerabilitiesList.push({ 
       severity: 'High', 
-      title: '🔓 HTTPS non activé', 
+      title: 'HTTPS non activé', 
       description: 'Le site n\'utilise pas HTTPS. Toutes les données transitent en clair et peuvent être interceptées par des attaquants (attaque Man-in-the-Middle).',
       cve: 'CWE-319',
       risk: 'Critique',
@@ -39,7 +39,7 @@
     vulnerabilities.push({ severity: 'high', issue: 'HSTS manquant', impact: 'Vulnérable aux attaques downgrade' });
     vulnerabilitiesList.push({ 
       severity: 'Medium', 
-      title: '⚠️ HSTS manquant', 
+      title: 'HSTS manquant', 
       description: 'Le header Strict-Transport-Security n\'est pas configuré. Le site est vulnérable aux attaques de rétrogradation SSL stripping.',
       cve: 'CWE-523',
       risk: 'Moyen',

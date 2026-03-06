@@ -546,7 +546,7 @@ async function analyzeWebsite(url) {
     vulnerabilities.push({ severity: 'critical', issue: 'Pas de HTTPS', impact: 'Données non chiffrées' });
     vulnerabilitiesList.push({ 
       severity: 'High', 
-      title: '🔓 HTTPS non activé', 
+      title: 'HTTPS non activé', 
       description: 'Le site n\'utilise pas HTTPS. Toutes les données transitent en clair et peuvent être interceptées par des attaquants (attaque Man-in-the-Middle).',
       cve: 'CWE-319',
       risk: 'Critique',

@@ -13,6 +13,7 @@ import { ResultsGrid } from './components/ResultsGrid';
 import { InfiniteScroll } from './components/InfiniteScroll';
 import { Tabs } from './components/Tabs';
 import { CompareMode } from './components/CompareMode';
+import { CookieConsent } from './components/CookieConsent';
 import {
   RadarChart,
   PolarGrid,
@@ -570,7 +571,7 @@ export default function App() {
                       </p>
                       <div className="flex justify-center">
                         <a 
-                          href="mailto:contact@grandson-analytics.com?subject=Demande d'audit professionnel"
+                          href="mailto:papicamara22@gmail.com?subject=Demande d'audit professionnel"
                           className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
                         >
                           <Award className="w-4 h-4" />
@@ -1238,7 +1239,7 @@ export default function App() {
                                   {priorityLabels[priority] || 'Moyenne'}
                                 </span>
                               </div>
-                              {impact && <span className="text-xs text-slate-600 font-medium">📊 Impact: {impact}</span>}
+                              {impact && <span className="text-xs text-slate-600 font-medium">Impact: {impact}</span>}
                             </div>
                             <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
                           </div>
@@ -1320,7 +1321,7 @@ export default function App() {
                   
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <a 
-                      href="mailto:contact@grandson-analytics.com?subject=Demande d'audit personnalisé"
+                      href="mailto:papicamara22@gmail.com?subject=Demande d'audit personnalisé"
                       className="inline-flex items-center gap-2 px-8 py-4 bg-white text-orange-600 font-bold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
                     >
                       <span>Demander un audit personnalisé</span>
@@ -1487,7 +1488,7 @@ export default function App() {
 
             {/* Copyright */}
             <p className="text-xs sm:text-sm text-slate-500 mt-2">
-              © 2024 GRANDSON. Tous droits réservés.
+              © 2026 GRANDSON. Tous droits réservés.
             </p>
           </div>
         </div>
@@ -1514,6 +1515,9 @@ export default function App() {
           </button>
         </div>
       </nav>
+
+      {/* Cookie Consent Banner */}
+      <CookieConsent />
     </div>
   );
 }
